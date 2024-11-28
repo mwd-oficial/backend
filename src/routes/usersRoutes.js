@@ -10,7 +10,7 @@ const corsOption = {
 export function routes(app) {
     app.use(express.json());
     app.use(cors(corsOption))
-    app.get("/posts", listarUsers);
-    app.post("/posts", cadastrarUsers);
-    app.delete("/posts", excluirUsers);
+    app.get("/users", listarUsers);
+    app.post("/users", cadastrarUsers);
+    app.delete("/users", excluirUsers);
 }
