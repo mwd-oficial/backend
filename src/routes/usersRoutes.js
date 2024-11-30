@@ -13,6 +13,6 @@ export function routes(app) {
     app.options('/api/users', cors(corsOptions));
 
     app.get("/users", listarUsers);
-    app.post("/cadastrar.html", cadastrarUsers);
+    app.post("/users", cadastrarUsers);
     app.delete("/users", excluirUsers);
 }
