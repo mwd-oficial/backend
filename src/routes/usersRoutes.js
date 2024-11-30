@@ -5,7 +5,7 @@ export function routes(app) {
     app.use(express.json());
     
     app.use((req, res, next) => {
-        res.header("Access-Control-Allow-Origin", "https://mwd-oficial.github.io"); // Adicione os domínios permitidos aqui
+        res.header("Access-Control-Allow-Origin", "https://mwd-oficial.github.io", "http://127.0.0.1:5500", "http://localhost:3000"); // Adicione os domínios permitidos aqui
         res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         res.header("Access-Control-Allow-Headers", "Content-Type");
         next();
