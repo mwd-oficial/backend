@@ -6,12 +6,13 @@ const app = express();
 
 // Configuração do CORS
 const corsOptions = {
-    origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500", "http://localhost:3000"],
+    origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"]
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Adicionando esta linha para lidar com preflight requests
 app.use(express.json());
 routes(app);
 
