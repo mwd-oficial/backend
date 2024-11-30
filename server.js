@@ -1,9 +1,10 @@
 import express from "express";
-import {routes} from "./src/routes/usersRoutes.js";
+import { routes } from "./src/routes/usersRoutes.js";
 
 const app = express();
 routes(app);
 
-app.listen(3000, () => {
-    console.log("Servidor escutando na porta 3000");
+const PORT = process.env.PORT
+app.listen(PORT, () => {
+    console.log(`Servidor escutando na porta ${PORT}`);
 })
