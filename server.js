@@ -4,19 +4,17 @@ import cors from "cors";
 
 const app = express();
 
-// Configuração do CORS
 const corsOptions = {
     origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"]
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Adicionando esta linha para lidar com preflight requests
+app.options('*', cors(corsOptions));
 app.use(express.json());
 routes(app);
 
-// Rota padrão (fallback)
 app.use((req, res) => {
     res.status(404).send('Página não encontrada');
 });
