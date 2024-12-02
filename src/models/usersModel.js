@@ -16,3 +16,7 @@ export async function postUsers(user) {
 export async function deleteUsers(user) {
     return colecao.deleteOne(user)   
 }
+
+export async function putUsers(user) {
+    return colecao.updateOne({username: user.username}, {$set:user});
+}
