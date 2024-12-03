@@ -6,6 +6,19 @@ export async function listarUsers(req, res) {
     res.status(200).json(users);
 }
 
+export async function verificarUser(req, res) {
+    const usernameCadastrar = req.body.username; const emailCadastrar = req.body.email;
+    try {
+        const userByUsername = await colecao.findOne({ username: usernameCadastrar });
+        const userByEmail = await colecao.findOne({ email: emailCadastrar });
+        if (userByUsername) return res.status(200).json({ "Erro": "Username já registrado" });
+        if (userByEmail) return res.status(200).json({ "Erro": "Email já registrado" });
+        res.status(200).json({ "Mensagem": "Username e email disponíveis" });
+    } catch (erro) {
+        console.error("Erro ao buscar dados:", erro.message); res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
 export async function cadastrarUser(req, res) {
     const userData = req.body;
     try {
