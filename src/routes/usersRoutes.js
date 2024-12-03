@@ -13,7 +13,7 @@ export function routes(app) {
     
     app.get("/users", listarUsers);
     app.post("/cadastrar", cadastrarUser);
-    app.get("/entrar", entrarUser)
+    app.post("/entrar", entrarUser)
     app.delete("/excluir", excluirUser);
     app.put("/users/:id", editarUser);
 }
