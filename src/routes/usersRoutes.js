@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { listarUsers, cadastrarUsers, excluirUsers, editarUsers } from "../controllers/usersController.js"
+import { listarUsers, cadastrarUser, entrarUser, excluirUser, editarUser } from "../controllers/usersController.js";
 
 const corsOptions = {
     origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500"],
@@ -12,7 +12,8 @@ export function routes(app) {
     app.use(cors(corsOptions));
     
     app.get("/users", listarUsers);
-    app.post("/users", cadastrarUsers);
-    app.delete("/users", excluirUsers);
-    app.put("/users", editarUsers)
+    app.post("/cadastrar", cadastrarUser);
+    app.get("/entrar", entrarUser)
+    app.delete("/excluir", excluirUser);
+    app.put("/users/:id", editarUser);
 }
