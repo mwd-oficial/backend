@@ -18,5 +18,6 @@ export async function deleteUsers(user) {
 }
 
 export async function putUsers(user) {
-    return colecao.updateOne({username: user.username}, {$set:user});
+    const objID = ObjectId.createFromHexString(user._id)
+    return colecao.updateOne({_id: new ObjectId(objID)}, {$set:user});
 }
