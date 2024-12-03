@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { listarUsers, buscarUser, cadastrarUser, entrarUser, excluirUser, editarUser } from "../controllers/usersController.js";
+import { listarUsers, verificarUser, cadastrarUser, entrarUser, excluirUser, editarUser } from "../controllers/usersController.js";
 
 const corsOptions = {
     origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500"],
