@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { getUsers, postUser, getEmail, deleteUser, putUser } from "../models/usersModel.js";
+import { getUsers, postUser, findUser, getEmail, getUsername, deleteUser, putUser } from "../models/usersModel.js";
 
 export async function listarUsers(req, res) {
     const users = await getUsers();
@@ -7,15 +7,14 @@ export async function listarUsers(req, res) {
 }
 
 export async function verificarUser(req, res) {
-    const usernameCadastrar = req.body.username; const emailCadastrar = req.body.email;
+    const usernameCadastrar = req.body.username; 
+    const emailCadastrar = req.body.email;
     try {
-        const userByUsername = await colecao.findOne({ username: usernameCadastrar });
-        const userByEmail = await colecao.findOne({ email: emailCadastrar });
-        if (userByUsername) return res.status(200).json({ "Erro": "Username já registrado" });
-        if (userByEmail) return res.status(200).json({ "Erro": "Email já registrado" });
-        res.status(200).json({ "Mensagem": "Username e email disponíveis" });
+        const resultado = await findUser(usernameCadastrar, emailCadastrar)
+        res.status(200).json(resultado)
     } catch (erro) {
-        console.error("Erro ao buscar dados:", erro.message); res.status(500).json({ "Erro": "Falha na requisição" });
+        console.error("Erro ao buscar dados:", erro.message); 
+        res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
 
@@ -33,7 +32,7 @@ export async function cadastrarUser(req, res) {
     }
 }
 
-export async function entrarUser(req, res) {
+export async function validarSenha(req, res) {
     const email = req.body.email;
     const password = req.body.password;
 
@@ -48,6 +47,16 @@ export async function entrarUser(req, res) {
     } catch (erro) {
         console.error(erro.message);
         res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+export async function pegarUsername(req, res) {
+    const username = req.body.username;
+    try {
+        const resultado = await getUsername(username);
+        res.status(200).json(resultado)
+    } catch(erro) {
+
     }
 }
 
