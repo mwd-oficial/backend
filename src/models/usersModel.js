@@ -14,40 +14,24 @@ export async function postUser(userData) {
     return await colecao.insertOne(userData);
 }
 
-export async function findUser(usernameCadastrar, emailCadastrar) {
-    const username = await colecao.findOne({ username: usernameCadastrar });
-    const email = await colecao.findOne({ email: emailCadastrar });
-    if (username && email) return { 
-        usernameRegistrado: true,
-        emailRegistrado: true 
-    }
-    if (username) return { 
-        usernameRegistrado: true,
-        emailRegistrado: false 
-    }
-    if (email) return { 
-        usernameRegistrado: false,
-        emailRegistrado: true 
-    }
-    return { 
-        usernameRegistrado: false,
-        emailRegistrado: false 
-    }
+export async function getUsername(username) {
+    return await colecao.findOne({ username: username });
 }
 
 export async function getEmail(email) {
-    return await colecao.findOne({email: email})
-}
-
-export async function getUsername(username) {
-    return await colecao.findOne({username: username})
+    return await colecao.findOne({ email: email });
 }
 
 export async function deleteUser(userData) {
     return await colecao.deleteOne(userData);
 }
 
-export async function putUser(userId, userData) {
+export async function putUserHex(userId, userData) {
     const objId = ObjectId.createFromHexString(userId);
-    return await colecao.updateOne({_id: new ObjectId(objId)}, {$set:userData});
+    return await colecao.updateOne({ _id: new ObjectId(objId) }, { $set: userData });
+}
+
+export async function putUser(userId, userData) {
+    const objId = new ObjectId(userId);
+    return await colecao.updateOne({ _id: objId }, { $set: userData });
 }

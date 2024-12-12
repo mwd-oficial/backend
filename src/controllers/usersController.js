@@ -1,34 +1,85 @@
 import bcrypt from "bcrypt";
-import { getUsers, postUser, findUser, getEmail, getUsername, deleteUser, putUser } from "../models/usersModel.js";
+import sharp from "sharp";
+import fs from "fs";
+import path from "path";
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUserHex, putUser } from "../models/usersModel.js";
+
+var caminhoImagem
+const API_URL = process.env.API_URL;
+//const API_URL = "http://localhost:3000";
 
 export async function listarUsers(req, res) {
     const users = await getUsers();
-    res.status(200).json(users);
-}
-
-export async function verificarUser(req, res) {
-    const usernameCadastrar = req.body.username; 
-    const emailCadastrar = req.body.email;
-    try {
-        const resultado = await findUser(usernameCadastrar, emailCadastrar)
-        res.status(200).json(resultado)
-    } catch (erro) {
-        console.error("Erro ao buscar dados:", erro.message); 
-        res.status(500).json({ "Erro": "Falha na requisição" });
-    }
+    return res.status(200).json(users);
 }
 
 export async function cadastrarUser(req, res) {
     const userData = req.body;
+
+    if (await getUsername(userData.username) && await getEmail(userData.email)) {
+        return res.status(200).json({ msg: "Nome de usuário e email já registrados. Clique em Entrar." })
+    }
+
+    if (await getUsername(userData.username)) {
+        return res.status(200).json({ msg: "Nome de usuário já registrado. Tente novamente." })
+    }
+
+    if (await getEmail(userData.email)) {
+        return res.status(200).json({ msg: "Email já registrado. Clique em Entrar." })
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(userData.password, 10);
         userData.password = hashedPassword;
 
-        const newUser = await postUser(userData);
-        res.status(200).json(newUser);
+        const newUser = await postUser({
+            username: userData.username,
+            email: userData.email,
+            password: userData.password,
+        });
+
+        console.log("req.file " + req.file)
+        if (req.file) {
+            const caminhoImagemOriginal = req.file.path;
+            const caminhoImagemOtimizada = path.resolve('uploads', `${newUser.insertedId}.png`);
+            await sharp(caminhoImagemOriginal)
+                .rotate()
+                .resize(200, 200, { fit: 'inside' })
+                .toFormat('png', { quality: 50 })
+                .toFile(caminhoImagemOtimizada);
+            caminhoImagem = caminhoImagemOtimizada
+
+            try {
+                fs.chmodSync(caminhoImagemOriginal, 0o666);
+                fs.unlinkSync(caminhoImagemOriginal);
+                console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
+            } catch (err) {
+                console.warn(`Erro ao excluir a imagem original: ${err.message}`);
+            }
+
+            userData.imagem = `${API_URL}/${newUser.insertedId}.png`
+            await putUser(newUser.insertedId, {
+                imagem: userData.imagem
+            })
+
+        } else {
+            if (JSON.parse(userData.semFoto)) {
+                userData.imagem = ""
+                await putUser(newUser.insertedId, {
+                    imagem: userData.imagem
+                })
+            }
+        }
+
+        const resultado = await getUsername(userData.username)
+
+        return res.status(200).json({
+            resultado,
+            msg: "Cadastro efetuado com sucesso!",
+        });
     } catch (erro) {
         console.error(erro.message);
-        res.status(500).json({ "Erro": "Falha na requisição" });
+        return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
 
@@ -38,47 +89,135 @@ export async function validarSenha(req, res) {
 
     try {
         const userData = await getEmail(email);
-        if (!userData) return res.status(404).json({ "Erro": "Usuário não encontrado" });
+        if (!userData) return res.status(200).json({
+            msg: "Email não encontrado."
+        });
 
         const isPasswordValid = await bcrypt.compare(password, userData.password);
-        if (!isPasswordValid) return res.status(401).json({ "Erro": "Senha incorreta" });
+        if (!isPasswordValid) return res.status(200).json({
+            emailEncontrado: true,
+            msg: "A senha está incorreta."
+        });
 
-        res.status(200).json({ "Mensagem": "Entrada bem-sucedida!" });
+        return res.status(200).json({
+            userData,
+            emailEncontrado: true,
+            senhaCorreta: true,
+            msg: "Entrada efetuada com sucesso!"
+        });
     } catch (erro) {
         console.error(erro.message);
-        res.status(500).json({ "Erro": "Falha na requisição" });
+        return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
 
-export async function pegarUsername(req, res) {
-    const username = req.body.username;
+export async function pegarUserInfo(req, res) {
+    const username = req.body.username ?? undefined;
+    const email = req.body.email ?? undefined;
     try {
-        const resultado = await getUsername(username);
-        res.status(200).json(resultado)
-    } catch(erro) {
-
+        var resultado
+        if (username) {
+            resultado = await getUsername(username)
+        } else if (email) {
+            resultado = await getEmail(email)
+        }
+        return res.status(200).json(resultado)
+    } catch (erro) {
+        console.error("Erro ao buscar dados:", erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
 
 export async function excluirUser(req, res) {
     const userData = req.body;
     try {
-        const excludedUser = await deleteUser(userData);
-        res.status(200).json(excludedUser);
+        if (userData.imagem !== "" && caminhoImagem) fs.unlinkSync(caminhoImagem);
+        const excludedUser = await deleteUser(userData.username);
+        return res.status(200).json(excludedUser);
     } catch (erro) {
         console.error(erro.message);
-        res.status(500).json({ "Erro": "Falha na requisição" });
+        return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
 
 export async function editarUser(req, res) {
     const userId = req.params.id;
     const userData = req.body;
+
+    console.log("req.file:", req.file);  // Deve mostrar os detalhes do arquivo enviado
+
+    const verificarUsername = await getUsername(userData.username) && userData.username !== userData.usernameCadastrado
+    const verificarEmail = await getEmail(userData.email) && userData.email !== userData.emailCadastrado
+
     try {
-        const editedUser = await putUser(userId, userData);
-        res.status(200).json(editedUser);
+        if (verificarUsername && verificarEmail) {
+            return res.status(200).json({
+                msg: "Nome de usuário e email já registrados. Tente novamente."
+            })
+        }
+
+        if (verificarUsername) {
+            return res.status(200).json({
+                msg: "Nome de usuário já registrado. Tente novamente."
+            })
+        }
+
+        if (verificarEmail) {
+            return res.status(200).json({
+                msg: "Email já registrado. Tente novamente."
+            })
+        }
+
+
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        userData.password = hashedPassword;
+
+        await putUserHex(userId, {
+            username: userData.username,
+            email: userData.email,
+            password: userData.password,
+        });
+
+        console.log(userData.semFoto)
+        if (req.file) {
+            const caminhoImagemOriginal = req.file.path;
+            const caminhoImagemOtimizada = path.resolve('uploads', `${userId}.png`);
+            await sharp(caminhoImagemOriginal)
+                .rotate()
+                .resize(200, 200, { fit: 'inside' })
+                .toFormat('png', { quality: 50 })
+                .toFile(caminhoImagemOtimizada);
+            caminhoImagem = caminhoImagemOtimizada
+
+            try {
+                fs.chmodSync(caminhoImagemOriginal, 0o666);
+                fs.unlinkSync(caminhoImagemOriginal);
+                console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
+            } catch (err) {
+                console.warn(`Erro ao excluir a imagem original: ${err.message}`);
+            }
+
+            userData.imagem = `${API_URL}/${userId}.png`
+            await putUserHex(userId, {
+                imagem: userData.imagem
+            })
+        } else {
+            if (JSON.parse(userData.semFoto)) {
+                userData.imagem = ""
+                await putUserHex(userId, {
+                    imagem: userData.imagem
+                })
+            }
+        }
+
+        const resultado = await getUsername(userData.username)
+        return res.status(200).json({
+            resultado,
+            msg: "Informações atualizadas com sucesso!"
+        });
+
     } catch (erro) {
         console.error(erro.message);
-        res.status(500).json({ "Erro": "Falha na requisição" });
+        return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
