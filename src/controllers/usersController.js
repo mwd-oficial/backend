@@ -1,12 +1,13 @@
+import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import sharp from "sharp";
 import fs from "fs";
 import path from "path";
-import { getUsers, postUser, getUsername, getEmail, deleteUser, putUserHex, putUser } from "../models/usersModel.js";
+import FormData from "form-data";
+import axios from "axios";
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
 var caminhoImagem
-const API_URL = process.env.API_URL;
-//const API_URL = "http://localhost:3000";
 
 export async function listarUsers(req, res) {
     const users = await getUsers();
@@ -39,37 +40,7 @@ export async function cadastrarUser(req, res) {
         });
 
         console.log("req.file " + req.file)
-        if (req.file) {
-            const caminhoImagemOriginal = req.file.path;
-            const caminhoImagemOtimizada = path.resolve('uploads', `${newUser.insertedId}.png`);
-            await sharp(caminhoImagemOriginal)
-                .rotate()
-                .resize(200, 200, { fit: 'inside' })
-                .toFormat('png', { quality: 50 })
-                .toFile(caminhoImagemOtimizada);
-            caminhoImagem = caminhoImagemOtimizada
-
-            try {
-                fs.chmodSync(caminhoImagemOriginal, 0o666);
-                fs.unlinkSync(caminhoImagemOriginal);
-                console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
-            } catch (err) {
-                console.warn(`Erro ao excluir a imagem original: ${err.message}`);
-            }
-
-            userData.imagem = `${API_URL}/${newUser.insertedId}.png`
-            await putUser(newUser.insertedId, {
-                imagem: userData.imagem
-            })
-
-        } else {
-            if (JSON.parse(userData.semFoto)) {
-                userData.imagem = ""
-                await putUser(newUser.insertedId, {
-                    imagem: userData.imagem
-                })
-            }
-        }
+        await uploadImgbb(req.file, userData, newUser.insertedId)
 
         const resultado = await getUsername(userData.username)
 
@@ -131,7 +102,6 @@ export async function pegarUserInfo(req, res) {
 export async function excluirUser(req, res) {
     const userData = req.body;
     try {
-        if (userData.imagem !== "" && caminhoImagem) fs.unlinkSync(caminhoImagem);
         const excludedUser = await deleteUser(userData.username);
         return res.status(200).json(excludedUser);
     } catch (erro) {
@@ -141,7 +111,7 @@ export async function excluirUser(req, res) {
 }
 
 export async function editarUser(req, res) {
-    const userId = req.params.id;
+    const userId = ObjectId.createFromHexString(req.params.id);
     const userData = req.body;
 
     console.log("req.file:", req.file);  // Deve mostrar os detalhes do arquivo enviado
@@ -172,43 +142,14 @@ export async function editarUser(req, res) {
         const hashedPassword = await bcrypt.hash(userData.password, 10);
         userData.password = hashedPassword;
 
-        await putUserHex(userId, {
+        await putUser(userId, {
             username: userData.username,
             email: userData.email,
             password: userData.password,
         });
 
         console.log(userData.semFoto)
-        if (req.file) {
-            const caminhoImagemOriginal = req.file.path;
-            const caminhoImagemOtimizada = path.resolve('uploads', `${userId}.png`);
-            await sharp(caminhoImagemOriginal)
-                .rotate()
-                .resize(200, 200, { fit: 'inside' })
-                .toFormat('png', { quality: 50 })
-                .toFile(caminhoImagemOtimizada);
-            caminhoImagem = caminhoImagemOtimizada
-
-            try {
-                fs.chmodSync(caminhoImagemOriginal, 0o666);
-                fs.unlinkSync(caminhoImagemOriginal);
-                console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
-            } catch (err) {
-                console.warn(`Erro ao excluir a imagem original: ${err.message}`);
-            }
-
-            userData.imagem = `${API_URL}/${userId}.png`
-            await putUserHex(userId, {
-                imagem: userData.imagem
-            })
-        } else {
-            if (JSON.parse(userData.semFoto)) {
-                userData.imagem = ""
-                await putUserHex(userId, {
-                    imagem: userData.imagem
-                })
-            }
-        }
+        await uploadImgbb(req.file, userData, userId)
 
         const resultado = await getUsername(userData.username)
         return res.status(200).json({
@@ -219,5 +160,59 @@ export async function editarUser(req, res) {
     } catch (erro) {
         console.error(erro.message);
         return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+async function uploadImgbb(reqFile, userData, id) {
+    if (reqFile) {
+        const caminhoImagemOriginal = reqFile.path;
+        const caminhoImagemOtimizada = path.resolve('uploads', `${id}.png`);
+
+        // Processando a imagem com sharp
+        await sharp(caminhoImagemOriginal)
+            .rotate()
+            .resize(200, 200, { fit: 'inside' })
+            .toFormat('png', { quality: 50 })
+            .toFile(caminhoImagemOtimizada);
+
+        try {
+            fs.chmodSync(caminhoImagemOriginal, 0o666);
+            fs.unlinkSync(caminhoImagemOriginal);
+            console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
+        } catch (erro) {
+            console.warn(`Erro ao excluir a imagem original: ${erro.message}`);
+        }
+
+        // Upload para ImgBB
+        const formData = new FormData();
+        formData.append('image', fs.createReadStream(caminhoImagemOtimizada));
+
+        try {
+            const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
+                headers: formData.getHeaders(),
+            });
+
+            userData.imagem = res.data.data.url;
+            await putUser(id, {
+                imagem: userData.imagem,
+            });
+            console.log(res.data)
+            try {
+                fs.chmodSync(caminhoImagemOtimizada, 0o666);
+                fs.unlinkSync(caminhoImagemOtimizada);
+                console.log(`Imagem otimizada excluída: ${caminhoImagemOtimizada}`);
+            } catch (erro) {
+                console.warn(`Erro ao excluir a imagem otimizada: ${erro.message}`);
+            }
+
+        } catch (erro) {
+            console.error('Erro ao fazer upload para ImgBB:', erro);
+        }
+
+    } else {
+        if (JSON.parse(userData.semFoto)) {
+            userData.imagem = "";
+            await putUser(id, { imagem: userData.imagem });
+        }
     }
 }
