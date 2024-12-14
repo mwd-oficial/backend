@@ -7,8 +7,6 @@ import FormData from "form-data";
 import axios from "axios";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
-var caminhoImagem
-
 export async function listarUsers(req, res) {
     const users = await getUsers();
     return res.status(200).json(users);
@@ -185,7 +183,7 @@ async function uploadImgbb(reqFile, userData, id) {
 
         // Upload para ImgBB
         const formData = new FormData();
-        formData.append('image', fs.createReadStream(caminhoImagemOtimizada));
+        formData.append('image', fs.readFileSync(caminhoImagemOtimizada));
 
         try {
             const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
