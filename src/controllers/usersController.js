@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
-import jimp from "jimp";
+import Jimp from "jimp";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
 export async function listarUsers(req, res) {
