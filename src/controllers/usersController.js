@@ -171,32 +171,29 @@ export async function editarUser(req, res) {
 }
 
 async function uploadImgbb(imageBuffer, userData, id) {
+    
+    const optimizedBuffer = await sharp(imageBuffer)
+        .rotate()
+        .resize(200, 200, { fit: 'inside' })
+        .toFormat('png', { quality: 50 })
+        .toBuffer();
+
+    const formData = new FormData();
+    formData.append("image", optimizedBuffer, {
+        filename: 'image.png', contentType: "image/png"
+    });
+
     try {
-        const optimizedBuffer = await sharp(imageBuffer)
-            .resize(200, 200) // Redimensiona a imagem
-            .png({ quality: 50 }) // Ajusta a qualidade da imagem
-            .toBuffer();
-
-        const formData = new FormData();
-        formData.append("image", optimizedBuffer, {
-            filename: 'image.png',
-            contentType: "image/png"
-        });
-
         const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
             headers: formData.getHeaders(),
         });
-
         userData.imagem = res.data.data.url;
-        await putUser(id, {
-            imagem: userData.imagem
-        });
+        await putUser(id, { imagem: userData.imagem });
         console.log(res.data);
     } catch (erro) {
-        console.error('Erro ao fazer upload para ImgBB:', erro.response ? erro.response.data : erro.message);
+        console.error('Erro ao fazer upload para ImgBB:' + erro);
     }
 }
-
 
 
 
