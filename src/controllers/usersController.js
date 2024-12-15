@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
-import { Jimp } from "jimp";
+import { createCanvas, loadImage } from 'canvas';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
 export async function listarUsers(req, res) {
@@ -172,15 +172,19 @@ export async function editarUser(req, res) {
 
 async function uploadImgbb(imageBuffer, userData, id) {
     try {
-        const image = await Jimp.read(imageBuffer);
-        const optimizedBuffer = await image
-            .resize(200, Jimp.AUTO) // mantém a proporção da imagem
-            .quality(50) // ajusta a qualidade da imagem
-            .getBufferAsync(Jimp.MIME_PNG);
+        const image = await loadImage(imageBuffer);
+        const canvas = createCanvas(200, 200);
+        const ctx = canvas.getContext('2d');
+        
+        // Redimensiona a imagem
+        ctx.drawImage(image, 0, 0, 200, 200);
+
+        // Converte o canvas para buffer
+        const optimizedBuffer = canvas.toBuffer('image/png', { quality: 0.5 });
 
         const formData = new FormData();
         formData.append("image", optimizedBuffer, {
-            filename: `${id}.png`,
+            filename: 'image.png',
             contentType: "image/png"
         });
 
@@ -197,4 +201,5 @@ async function uploadImgbb(imageBuffer, userData, id) {
         console.error('Erro ao fazer upload para ImgBB:', erro.response ? erro.response.data : erro.message);
     }
 }
+
 
