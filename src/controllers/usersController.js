@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
-import { createCanvas, loadImage } from 'canvas';
+import imageResizer from 'image-resizer';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
 export async function listarUsers(req, res) {
@@ -172,18 +172,16 @@ export async function editarUser(req, res) {
 
 async function uploadImgbb(imageBuffer, userData, id) {
     try {
-        const image = await loadImage(imageBuffer);
-        const canvas = createCanvas(200, 200);
-        const ctx = canvas.getContext('2d');
-        
-        // Redimensiona a imagem
-        ctx.drawImage(image, 0, 0, 200, 200);
-
-        // Converte o canvas para buffer
-        const optimizedBuffer = canvas.toBuffer('image/png', { quality: 0.5 });
+        const resizedImage = await imageResizer.resize({
+            buffer: imageBuffer,
+            width: 200,
+            height: 200,
+            format: 'png',
+            quality: 50
+        });
 
         const formData = new FormData();
-        formData.append("image", optimizedBuffer, {
+        formData.append("image", resizedImage, {
             filename: 'image.png',
             contentType: "image/png"
         });
@@ -201,5 +199,6 @@ async function uploadImgbb(imageBuffer, userData, id) {
         console.error('Erro ao fazer upload para ImgBB:', erro.response ? erro.response.data : erro.message);
     }
 }
+
 
 
