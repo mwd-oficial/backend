@@ -171,11 +171,11 @@ export async function editarUser(req, res) {
 }
 
 async function uploadImgbb(imageBuffer, userData, id) {
-    
+
     const optimizedBuffer = await sharp(imageBuffer)
         .rotate()
-        .resize(200, 200, { fit: 'inside' })
-        .toFormat('png', { quality: 50 })
+        .resize(100, 100, { fit: 'inside' })
+        .toFormat('png', { quality: 10 })
         .toBuffer();
 
     const formData = new FormData();
