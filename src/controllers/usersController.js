@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
+import jimp from "jimp";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
 
 export async function listarUsers(req, res) {
@@ -169,15 +170,20 @@ export async function editarUser(req, res) {
     }
 }
 
-
 async function uploadImgbb(imageBuffer, userData, id) {
-    const formData = new FormData();
-    formData.append("image", imageBuffer, {
-        filename: `${id}.png`,
-        contentType: "image/png"
-    });
-
     try {
+        const image = await Jimp.read(imageBuffer);
+        const optimizedBuffer = await image
+            .resize(200, Jimp.AUTO) // mantém a proporção da imagem
+            .quality(50) // ajusta a qualidade da imagem
+            .getBufferAsync(Jimp.MIME_PNG);
+
+        const formData = new FormData();
+        formData.append("image", optimizedBuffer, {
+            filename: `${id}.png`,
+            contentType: "image/png"
+        });
+
         const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
             headers: formData.getHeaders(),
         });
@@ -188,7 +194,7 @@ async function uploadImgbb(imageBuffer, userData, id) {
         });
         console.log(res.data);
     } catch (erro) {
-        console.error('Erro ao fazer upload para ImgBB:', erro);
+        console.error('Erro ao fazer upload para ImgBB:', erro.response ? erro.response.data : erro.message);
     }
 }
 
