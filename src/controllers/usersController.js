@@ -1,8 +1,6 @@
 import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import sharp from "sharp";
-import fs from "fs";
-import path from "path";
 import FormData from "form-data";
 import axios from "axios";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
@@ -15,16 +13,20 @@ export async function listarUsers(req, res) {
 export async function cadastrarUser(req, res) {
     const userData = req.body;
 
+    if (!userData.password) {
+        return res.status(400).json({ msg: "A senha é obrigatória." });
+    }
+
     if (await getUsername(userData.username) && await getEmail(userData.email)) {
-        return res.status(200).json({ msg: "Nome de usuário e email já registrados. Clique em Entrar." })
+        return res.status(200).json({ msg: "Nome de usuário e email já registrados. Clique em Entrar." });
     }
 
     if (await getUsername(userData.username)) {
-        return res.status(200).json({ msg: "Nome de usuário já registrado. Tente novamente." })
+        return res.status(200).json({ msg: "Nome de usuário já registrado. Tente novamente." });
     }
 
     if (await getEmail(userData.email)) {
-        return res.status(200).json({ msg: "Email já registrado. Clique em Entrar." })
+        return res.status(200).json({ msg: "Email já registrado. Clique em Entrar." });
     }
 
     try {
@@ -37,10 +39,14 @@ export async function cadastrarUser(req, res) {
             password: userData.password,
         });
 
-        console.log("req.file " + req.file)
-        await uploadImgbb(req.file, userData, newUser.insertedId)
+        if (req.file) {
+            await uploadImgbb(req.file.buffer, userData, newUser.insertedId);
+        } else if (JSON.parse(userData.semFoto)) {
+            userData.imagem = "";
+            await putUser(newUser.insertedId, { imagem: userData.imagem });
+        }
 
-        const resultado = await getUsername(userData.username)
+        const resultado = await getUsername(userData.username);
 
         return res.status(200).json({
             resultado,
@@ -112,8 +118,6 @@ export async function editarUser(req, res) {
     const userId = ObjectId.createFromHexString(req.params.id);
     const userData = req.body;
 
-    console.log("req.file:", req.file);  // Deve mostrar os detalhes do arquivo enviado
-
     const verificarUsername = await getUsername(userData.username) && userData.username !== userData.usernameCadastrado
     const verificarEmail = await getEmail(userData.email) && userData.email !== userData.emailCadastrado
 
@@ -147,7 +151,12 @@ export async function editarUser(req, res) {
         });
 
         console.log(userData.semFoto)
-        await uploadImgbb(req.file, userData, userId)
+        if (req.file) {
+            await uploadImgbb(req.file.buffer, userData, userId);
+        } else if (JSON.parse(userData.semFoto)) {
+            userData.imagem = "";
+            await putUser(userId, { imagem: userData.imagem });
+        }
 
         const resultado = await getUsername(userData.username)
         return res.status(200).json({
@@ -161,56 +170,31 @@ export async function editarUser(req, res) {
     }
 }
 
-async function uploadImgbb(reqFile, userData, id) {
-    if (reqFile) {
-        const caminhoImagemOriginal = reqFile.path;
-        const caminhoImagemOtimizada = path.resolve('uploads', `${id}.png`);
 
-        // Processando a imagem com sharp
-        await sharp(caminhoImagemOriginal)
-            .rotate()
-            .resize(200, 200, { fit: 'inside' })
-            .toFormat('png', { quality: 50 })
-            .toFile(caminhoImagemOtimizada);
+async function uploadImgbb(imageBuffer, userData, id) {
+    const optimizedBuffer = await sharp(imageBuffer)
+        .rotate()
+        .resize(200, 200, { fit: 'inside' })
+        .toFormat('png', { quality: 50 })
+        .toBuffer();
 
-        try {
-            fs.chmodSync(caminhoImagemOriginal, 0o666);
-            fs.unlinkSync(caminhoImagemOriginal);
-            console.log(`Arquivo original excluído: ${caminhoImagemOriginal}`);
-        } catch (erro) {
-            console.warn(`Erro ao excluir a imagem original: ${erro.message}`);
-        }
+    const formData = new FormData();
+    formData.append("image", optimizedBuffer, {
+        filename: 'image.png',
+        contentType: "image/png"
+    });
 
-        // Upload para ImgBB
-        const formData = new FormData();
-        formData.append('image', fs.readFileSync(caminhoImagemOtimizada));
+    try {
+        const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
+            headers: formData.getHeaders(),
+        });
 
-        try {
-            const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
-                headers: formData.getHeaders(),
-            });
-
-            userData.imagem = res.data.data.url;
-            await putUser(id, {
-                imagem: userData.imagem,
-            });
-            console.log(res.data)
-            try {
-                fs.chmodSync(caminhoImagemOtimizada, 0o666);
-                fs.unlinkSync(caminhoImagemOtimizada);
-                console.log(`Imagem otimizada excluída: ${caminhoImagemOtimizada}`);
-            } catch (erro) {
-                console.warn(`Erro ao excluir a imagem otimizada: ${erro.message}`);
-            }
-
-        } catch (erro) {
-            console.error('Erro ao fazer upload para ImgBB:', erro);
-        }
-
-    } else {
-        if (JSON.parse(userData.semFoto)) {
-            userData.imagem = "";
-            await putUser(id, { imagem: userData.imagem });
-        }
+        userData.imagem = res.data.data.url;
+        await putUser(id, {
+            imagem: userData.imagem
+        });
+        console.log(res.data);
+    } catch (erro) {
+        console.error('Erro ao fazer upload para ImgBB:', erro);
     }
 }
