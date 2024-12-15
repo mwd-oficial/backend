@@ -1,6 +1,6 @@
 import express from "express";
-import multer from "multer";
 import cors from "cors";
+import multer from "multer";
 import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, editarUser } from "../controllers/usersController.js";
 
 const corsOptions = {
@@ -8,16 +8,7 @@ const corsOptions = {
     optionsSuccessStatus: 200
 }
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.originalname);
-    }
-})
-const upload = multer({ dest: "./uploads" , storage})
-
+const upload = multer()
 
 export function routes(app) {
     app.use(express.json());
