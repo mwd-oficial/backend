@@ -174,8 +174,8 @@ async function uploadImgbb(imageBuffer, userData, id) {
 
     const optimizedBuffer = await sharp(imageBuffer)
         .rotate()
-        .resize(100, 100, { fit: 'inside' })
-        .toFormat('png', { quality: 80 })
+        .resize(150, 150, { fit: 'inside' })
+        .toFormat('png', { quality: 90 })
         .toBuffer();
 
     const formData = new FormData();
