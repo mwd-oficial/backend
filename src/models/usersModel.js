@@ -14,12 +14,12 @@ export async function postUser(userData) {
     return await colecao.insertOne(userData);
 }
 
-export async function getUsername(username) {
-    return await colecao.findOne({ username: username });
+export async function getUsername(usernamep) {
+    return await colecao.findOne({ username: usernamep });
 }
 
-export async function getEmail(email) {
-    return await colecao.findOne({ email: email });
+export async function getEmail(emailp) {
+    return await colecao.findOne({ email: emailp });
 }
 
 export async function deleteUser(userData) {

@@ -36,7 +36,7 @@ export async function cadastrarUser(req, res) {
         const newUser = await postUser({
             username: userData.username,
             email: userData.email,
-            password: userData.password,
+            password: userData.password
         });
 
         if (req.file) {
@@ -106,7 +106,7 @@ export async function pegarUserInfo(req, res) {
 export async function excluirUser(req, res) {
     const userData = req.body;
     try {
-        const excludedUser = await deleteUser(userData.username);
+        const excludedUser = await deleteUser({ username: userData.username });
         return res.status(200).json(excludedUser);
     } catch (erro) {
         console.error(erro.message);
