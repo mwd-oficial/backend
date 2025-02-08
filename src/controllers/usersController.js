@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import path from "path"
 import fs from "fs"
 import { google } from "googleapis";
-import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser } from "../models/usersModel.js";
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel } from "../models/usersModel.js";
 
 
 const oauth2Client = new google.auth.OAuth2(
@@ -39,17 +39,10 @@ async function getNewAccessToken(refreshToken, clientId, clientSecret) {
 
 
 
-
-
-
 export async function listarUsers(req, res) {
     const users = await getUsers();
     return res.status(200).json(users);
 }
-
-
-
-
 
 
 
@@ -82,18 +75,19 @@ export async function cadastrarUser(req, res) {
         const newUser = await postUser({
             username: userData.username,
             email: userData.email,
-            password: userData.password
+            password: userData.password,
+            moedas3d: userData.moedas3d,
+            favoritos: userData.favoritos,
+            likes: userData.likes,
+            dislikes: userData.dislikes
         });
 
         if (req.file) {
-            //await uploadImgbb(req.file.buffer, userData, newUser.insertedId);
             await uploadFile(req.file, "img", userData, newUser.insertedId)
         } else if (JSON.parse(userData.semFoto)) {
-            userData.imagem = "";
-            userData.preencher = false;
-            await putUser(newUser.insertedId, { 
-                imagemId: userData.imagem,
-                preencher: userData.preencher 
+            await putUser(newUser.insertedId, {
+                imagemId: "",
+                preencher: false
             });
         }
 
@@ -136,6 +130,7 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
                     ...form.getHeaders()
                 }
             });
+
             bodyData.imagemId = res.data.id;
             await putUser(dbId, {
                 imagemId: bodyData.imagemId,
@@ -211,11 +206,6 @@ async function tornarPublico(id) {
 
 
 
-
-
-
-
-
 export async function validarSenha(req, res) {
     const email = req.body.email;
     const password = req.body.password;
@@ -265,12 +255,10 @@ export async function pegarUserInfo(req, res) {
 
 
 
-
-
-
 export async function excluirUser(req, res) {
     const userData = req.body;
     try {
+        await deleteFile(userData.imagemId)
         const excludedUser = await deleteUser({ username: userData.username });
         return res.status(200).json(excludedUser);
     } catch (erro) {
@@ -279,10 +267,10 @@ export async function excluirUser(req, res) {
     }
 }
 
-export async function deleteFile() {
+async function deleteFile(imagemId) {
     try {
         const response = await drive.files.delete({
-            fileId: "1tS_JOulug5uN6RkW2ATHdoCCJU4-V-4v",
+            fileId: imagemId,
         })
         console.log(response.data, response.status)
     } catch (erro) {
@@ -294,17 +282,12 @@ export async function deleteFile() {
 
 
 
-
-
-
-
-
 export async function editarUser(req, res) {
     const userId = ObjectId.createFromHexString(req.params.id);
     const userData = req.body;
 
-    const verificarUsername = await getUsername(userData.username) && userData.username !== userData.usernameCadastrado
-    const verificarEmail = await getEmail(userData.email) && userData.email !== userData.emailCadastrado
+    const verificarUsername = await getUsername(userData.username) && userData.username !== userData.oldUsername;
+    const verificarEmail = await getEmail(userData.email) && userData.email !== userData.oldEmail;
 
     try {
         if (verificarUsername && verificarEmail) {
@@ -333,14 +316,19 @@ export async function editarUser(req, res) {
             username: userData.username,
             email: userData.email,
             password: userData.password,
+            preencher: userData.preencher
         });
 
         console.log(userData.semFoto)
         if (req.file) {
-            //await uploadImgbb(req.file.buffer, userData, userId);
+            await deleteFile(userData.oldImagemId)
+            await uploadFile(req.file, "img", userData, userId)
         } else if (JSON.parse(userData.semFoto)) {
-            userData.imagem = "";
-            await putUser(userId, { imagem: userData.imagem });
+            await deleteFile(userData.oldImagemId)
+            await putUser(userId, {
+                imagemId: "",
+                preencher: false
+            });
         }
 
         const resultado = await getUsername(userData.username)
@@ -354,36 +342,88 @@ export async function editarUser(req, res) {
         return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
-/*
-async function uploadImgbb(imageBuffer, userData, id) {
 
-    const optimizedBuffer = await sharp(imageBuffer)
-        .rotate()
-        .resize(400, 400, { fit: 'inside' })
-        .toFormat('png', { 
-            quality: 80,
-            compressionLevel: 9
-        })
-        .toBuffer();
-
-
-    const formData = new FormData();
-    formData.append("image", optimizedBuffer, {
-        filename: 'image.png', contentType: "image/png"
-    });
-
+export async function atualizarInteracoes(req, res) {
     try {
-        const res = await axios.post('https://api.imgbb.com/1/upload?key=aeeccd59401ce854b426c20ed68d789a', formData, {
-            headers: formData.getHeaders(),
+        const userId = ObjectId.createFromHexString(req.params.id);
+        const userData = req.body;
+
+        if (userData.moedas3d) await putUser(userId, { moedas3d: userData.moedas3d });
+        if (userData.favoritos) await putUser(userId, { favoritos: userData.favoritos });
+        if (userData.likes) await putUser(userId, { likes: userData.likes });
+        if (userData.dislikes) await putUser(userId, { dislikes: userData.dislikes });
+
+        return res.status(200).json({
+            msg: "Interacoes atualizadas com sucesso!"
         });
-        userData.imagem = res.data.data.url;
-        await putUser(id, { 
-            imagem: userData.imagem,
-            preencher: userData.preencher
-        });
-        console.log(res.data);
+
     } catch (erro) {
-        console.error('Erro ao fazer upload para ImgBB:' + erro);
+        console.log("Erro ao atualizar interações")
+        return res.status(200).json({
+            msg: "Erro ao atualizar interações"
+        });
     }
 }
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+// Models
+
+export async function listarModels(req, res) {
+    const models = await getModels();
+    return res.status(200).json(models);
+}
+
+
+export async function cadastrarModels(req, res) {
+    try {
+        const modelos = req.body.modelos
+        for (const modelo of modelos) {
+            await postModels(modelo);
+        }
+    } catch (erro) {
+        console.log("Erro ao cadastrar modelos")
+    }
+}
+
+export async function editarModel(req, res) {
+    try {
+        const modelData = req.body;
+        const idPorSrc = await getModelId(modelData.src)
+        const modelId = idPorSrc._id;
+
+        await putModel(modelId, {
+            likes: modelData.likes,
+            dislikes: modelData.dislikes
+        });
+
+        return res.status(200).json({
+            msg: "Dados do modelo atualizado com sucesso!"
+        });
+
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}

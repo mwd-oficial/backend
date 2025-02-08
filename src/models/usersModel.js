@@ -4,8 +4,9 @@ import conectarAoBanco from "../config/dbConfig.js";
 const conexao = await conectarAoBanco(process.env.STRING_CONEXAO);
 
 const db = conexao.db("fnaf3d");
+
+// Users
 const colecaoUsers = db.collection("users");
-const colecaoModels = db.collection("models");
 
 export async function getUsers() {
     return await colecaoUsers.find().toArray();
@@ -30,4 +31,29 @@ export async function deleteUser(userData) {
 export async function putUser(userId, userData) {
     const objId = new ObjectId(userId);
     return await colecaoUsers.updateOne({ _id: objId }, { $set: userData });
+}
+
+
+// Models
+
+const colecaoModels = db.collection("models");
+
+export async function getModels() {
+    return await colecaoModels.find().toArray();
+}
+
+export async function postModels(modelData) {
+    const encontrou = await colecaoModels.findOne({ src: modelData.src })
+    if (!encontrou) {
+        await colecaoModels.insertOne(modelData);
+    }
+}
+
+export async function getModelId(srcp) {
+    return await colecaoModels.findOne({ src: srcp });
+}
+
+export async function putModel(userId, modelData) {
+    const objId = new ObjectId(userId);
+    return await colecaoModels.updateOne({ _id: objId }, { $set: modelData });
 }
