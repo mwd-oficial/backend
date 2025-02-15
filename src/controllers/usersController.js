@@ -79,7 +79,8 @@ export async function cadastrarUser(req, res) {
             moedas3d: userData.moedas3d,
             favoritos: userData.favoritos,
             likes: userData.likes,
-            dislikes: userData.dislikes
+            dislikes: userData.dislikes,
+            vistos: userData.vistos
         });
 
         if (req.file) {
@@ -352,6 +353,7 @@ export async function atualizarInteracoes(req, res) {
         if (userData.favoritos) await putUser(userId, { favoritos: userData.favoritos });
         if (userData.likes) await putUser(userId, { likes: userData.likes });
         if (userData.dislikes) await putUser(userId, { dislikes: userData.dislikes });
+        if (userData.vistos) await putUser(userId, { vistos: userData.vistos });
 
         return res.status(200).json({
             msg: "Interacoes atualizadas com sucesso!"
