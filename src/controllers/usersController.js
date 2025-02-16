@@ -80,7 +80,12 @@ export async function cadastrarUser(req, res) {
             favoritos: userData.favoritos,
             likes: userData.likes,
             dislikes: userData.dislikes,
-            vistos: userData.vistos
+            vistos: userData.vistos,
+            comprados: userData.comprados,
+            encontrados: userData.encontrados,
+            douradosEncontrados: userData.douradosEncontrados,
+            botoesDourados: userData.botoesDourados,
+            ucnDesbloqueado: userData.ucnDesbloqueado,
         });
 
         if (req.file) {
@@ -344,7 +349,7 @@ export async function editarUser(req, res) {
     }
 }
 
-export async function atualizarInteracoes(req, res) {
+export async function atualizarDado(req, res) {
     try {
         const userId = ObjectId.createFromHexString(req.params.id);
         const userData = req.body;
@@ -354,6 +359,11 @@ export async function atualizarInteracoes(req, res) {
         if (userData.likes) await putUser(userId, { likes: userData.likes });
         if (userData.dislikes) await putUser(userId, { dislikes: userData.dislikes });
         if (userData.vistos) await putUser(userId, { vistos: userData.vistos });
+        if (userData.comprados) await putUser(userId, { comprados: userData.comprados });
+        if (userData.encontrados) await putUser(userId, { encontrados: userData.encontrados });
+        if (userData.douradosEncontrados) await putUser(userId, { douradosEncontrados: userData.douradosEncontrados });
+        if (userData.botoesDourados) await putUser(userId, { botoesDourados: userData.botoesDourados });
+        if (userData.ucnDesbloqueado) await putUser(userId, { ucnDesbloqueado: userData.ucnDesbloqueado });
 
         return res.status(200).json({
             msg: "Interacoes atualizadas com sucesso!"
