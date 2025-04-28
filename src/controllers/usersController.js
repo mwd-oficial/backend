@@ -5,7 +5,7 @@ import axios from "axios";
 import sharp from 'sharp';
 import { google } from "googleapis";
 import { NodeIO } from '@gltf-transform/core';
-import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, postAr } from "../models/usersModel.js";
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr } from "../models/usersModel.js";
 import { file } from "googleapis/build/src/apis/file/index.js";
 
 
@@ -445,7 +445,25 @@ export async function editarModel(req, res) {
     }
 }
 
-export async function ar(req, res) {
+
+
+
+
+
+
+
+
+
+
+
+// ar
+
+export async function listarAr(req, res) {
+    const models = await getAr();
+    return res.status(200).json(models);
+}
+
+export async function cadastrarAr(req, res) {
     console.log("ar executado")
     try {
         const fileId = req.body.driveId;
