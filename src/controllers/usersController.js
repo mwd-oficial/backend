@@ -3,9 +3,8 @@ import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
 import sharp from 'sharp';
-import path from "path"
-import fs from "fs"
 import { google } from "googleapis";
+import { NodeIO } from '@gltf-transform/core';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel } from "../models/usersModel.js";
 
 
@@ -149,15 +148,19 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
         } else {
             const folderId = "1sQ40PBHoq7PAOYHzbihvA7gew6f3CeBI";
             const form = new FormData();
+            const timestamp = new Date().toISOString();
+            const nomeArquivo = `ar-${timestamp}.glb`;
+
             form.append('metadata', JSON.stringify({
-                name: 'ar.glb',
+                name: nomeArquivo,
                 mimeType: 'model/gltf-binary',
                 parents: [folderId]
             }), {
                 contentType: 'application/json'
             });
-            form.append('file', arquivo.buffer, {
-                filename: 'ar.glb',
+
+            form.append('file', arquivo, {
+                filename: nomeArquivo,
                 contentType: 'model/gltf-binary'
             });
 
@@ -171,6 +174,8 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
             await tornarPublico(res.data.id)
 
             console.log(res.data);
+
+            return res.data.id;
         }
     } catch (erro) {
         console.log("Erro ao fazer upload para o Google Drive: " + erro)
@@ -432,6 +437,77 @@ export async function editarModel(req, res) {
 
         return res.status(200).json({
             msg: "Dados do modelo atualizado com sucesso!"
+        });
+
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+export async function ar(req, res) {
+    console.log("ar executado")
+    try {
+        const fileId = req.body.driveId;
+        console.log("fileId: " + fileId)
+        const animacao = req.body.animacao;
+
+        // Baixar o arquivo GLB do Google Drive
+        // const resultado = await drive.files.get(
+        //     { fileId, alt: 'media' },
+        //     { responseType: 'arraybuffer' }
+        // );
+        // console.log("resultado: " + resultado.data)
+        // // Gerando o GLB na memória
+        // const io = new NodeIO();
+        // let doc = io.read(new Uint8Array(resultado.data)); // Lê o arquivo GLB do ArrayBuffer
+
+        // // Modificando o modelo: removendo animações que não sejam "A_Crow_Idle"
+        // const root = doc.getRoot();
+        // const animations = root.listAnimations();
+
+        // animations.forEach(anim => {
+        //     if (anim.getName().toLowerCase() !== animacao.toLowerCase()) {
+        //         anim.dispose(); // remove a animação se o nome for diferente de "A_Crow_Idle"
+        //     }
+        // });
+
+        // // Converte o modelo GLB modificado para um ArrayBuffer binário
+        // const arrayBuffer = io.writeBinary(doc);
+        // const buffer = Buffer.from(arrayBuffer);
+
+        // 1. Baixando arquivo do Google Drive
+        const resultado = await drive.files.get(
+            { fileId, alt: 'media' },
+            { responseType: 'arraybuffer' }
+        );
+
+        // 2. Convertendo para buffer adequado
+        const buffer = Buffer.from(resultado.data);
+
+        // 3. Lendo o GLB com NodeIO
+        const io = new NodeIO();
+        const doc = await io.readBinary(buffer); // Use readBinary para arquivos .glb
+
+        // 4. Manipulando animações
+        const root = doc.getRoot();
+        const animations = root.listAnimations();
+
+        animations.forEach(anim => {
+            if (anim.getName().toLowerCase() !== animacao.toLowerCase()) {
+                anim.dispose();
+            }
+        });
+
+        // 5. Exportando o novo GLB
+        const arrayBuffer = await io.writeBinary(doc);
+        const novoBuffer = Buffer.from(arrayBuffer);
+
+        console.log('Arquivo enviado! ID:')
+
+        const newDriveId = await uploadFile(novoBuffer, "glb", undefined, undefined);
+        return res.status(200).json({
+            newDriveId: newDriveId,
         });
 
     } catch (erro) {
