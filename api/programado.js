@@ -1,5 +1,5 @@
-import { getAr } from "../models/usersModel.js";
-import { deleteFile } from "../controllers/usersController.js";
+import { getAr } from "../src/models/usersModel.js";
+import { deleteFile } from "../src/controllers/usersController.js";
 
 export default async function handler(req, res) {
     const agora = new Date()
