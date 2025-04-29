@@ -19,12 +19,16 @@
   "crons": [
     {
       "path": "/api/programado",
-      "schedule": "*/1 * * * *"
+      "schedule": "*/15 * * * *"
     }
   ],
   "rewrites": [
-    { 
-      "source": "/(.*)", 
+    {
+      "source": "/api/programado",
+      "destination": "/src/programado.js"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/server.js"
     }
   ],
