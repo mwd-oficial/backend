@@ -8,6 +8,7 @@ export default async function handler(req, res) {
     const expirados = modelosAr.filter(model => {
         const timestamp = new Date(model.timestamp)
         //const expiracao = new Date(timestamp.getTime() + 15 * 60 * 1000)
+        
         const expiracao = new Date(timestamp.getTime() + 5 * 60 * 1000)
         return expiracao <= agora
     })
