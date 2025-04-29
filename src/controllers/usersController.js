@@ -149,7 +149,7 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
         } else {
             const folderId = "1sQ40PBHoq7PAOYHzbihvA7gew6f3CeBI";
             const form = new FormData();
-            const nomeArquivo = `ar-${bodyData.username}-${bodyData.nome}-${bodyData.timestamp}.glb`;
+            const nomeArquivo = `${bodyData.username}-${bodyData.nome}-${bodyData.timestamp}.glb`;
 
             form.append('metadata', JSON.stringify({
                 name: nomeArquivo,
@@ -278,10 +278,10 @@ export async function excluirUser(req, res) {
     }
 }
 
-async function deleteFile(imagemId) {
+export async function deleteFile(driveId) {
     try {
         const response = await drive.files.delete({
-            fileId: imagemId,
+            fileId: driveId,
         })
         console.log(response.data, response.status)
     } catch (erro) {
@@ -497,7 +497,7 @@ export async function cadastrarAr(req, res) {
 
         await postAr({
             username: req.body.username,
-            driveId: fileId,
+            driveId: newDriveId,
             nome: req.body.nome,
             animacao: req.body.animacao,
             timestamp: req.body.timestamp
