@@ -1,6 +1,7 @@
 import express from "express";
 import { routes } from "./src/routes/usersRoutes.js";
 
+
 const app = express();
 routes(app);
 
