@@ -20,4 +20,6 @@ export default async function excluirAr(req, res) {
             console.error(`Erro ao deletar ${model.driveId}: ${err.message}`)
         }
     }
+
+    res.status(200).send("Verificação e exclusão concluídas.")
 }
