@@ -1,7 +1,7 @@
 import { getAr } from "../src/models/usersModel.js";
 import { deleteFile } from "../src/controllers/usersController.js";
 
-export default async function handler(req, res) {
+export default async function excluirAr(req, res) {
     const agora = new Date()
     const modelosAr = await getAr()
 
@@ -20,9 +20,4 @@ export default async function handler(req, res) {
             console.error(`Erro ao deletar ${model.driveId}: ${err.message}`)
         }
     }
-
-    return new Response(JSON.stringify({ deletados: expirados.length }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-    })
 }
