@@ -5,7 +5,6 @@ import axios from "axios";
 import sharp from 'sharp';
 import { google } from "googleapis";
 import { NodeIO } from '@gltf-transform/core';
-import { translate } from '@gltf-transform/functions';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr } from "../models/usersModel.js";
 import { file } from "googleapis/build/src/apis/file/index.js";
 
@@ -489,19 +488,6 @@ export async function cadastrarAr(req, res) {
             }
         });
 
-        root.listScenes().forEach(scene => {
-            scene.listNodes().forEach(node => {
-                if (node.getMesh()) {
-                    const [x, y, z] = node.getTranslation();
-                    node.setTranslation([
-                        x - 17.25,
-                        y - 2,
-                        z + 9
-                    ]);
-                }
-            });
-        });        
-        
         const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
 
