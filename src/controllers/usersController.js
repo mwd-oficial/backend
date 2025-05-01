@@ -5,6 +5,7 @@ import axios from "axios";
 import sharp from 'sharp';
 import { google } from "googleapis";
 import { NodeIO } from '@gltf-transform/core';
+import { translate } from '@gltf-transform/functions';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr } from "../models/usersModel.js";
 import { file } from "googleapis/build/src/apis/file/index.js";
 
@@ -488,6 +489,13 @@ export async function cadastrarAr(req, res) {
             }
         });
 
+        // Aplicar o deslocamento (move o modelo de acordo com os valores desejados)
+        root.listScenes().forEach(scene => {
+            scene.listNodes().forEach(node => {
+                node.setTranslation([ -17.25, -2, 9 ]); // Translação no eixo X, Y, Z
+            });
+        });
+        
         const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
 
