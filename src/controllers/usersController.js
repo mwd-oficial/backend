@@ -489,12 +489,18 @@ export async function cadastrarAr(req, res) {
             }
         });
 
-        // Aplicar o deslocamento (move o modelo de acordo com os valores desejados)
         root.listScenes().forEach(scene => {
             scene.listNodes().forEach(node => {
-                node.setTranslation([ -17.25, -2, 9 ]); // Translação no eixo X, Y, Z
+                if (node.getMesh()) {
+                    const [x, y, z] = node.getTranslation();
+                    node.setTranslation([
+                        x - 17.25,
+                        y - 2,
+                        z + 9
+                    ]);
+                }
             });
-        });
+        });        
         
         const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
