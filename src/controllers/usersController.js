@@ -512,13 +512,27 @@ async function translateAndFilter(buffer, animacao, tx, ty, tz) {
       anim.dispose();
     }
   });
-  // 2) wrapper + tradução
-  const scene   = root.listScenes()[0];
-  const wrapper = doc.createNode('wrapper').setTranslation([tx, ty, tz]);
-  scene.listNodes().forEach(node => wrapper.addChild(node));
-  scene.listNodes().forEach(node => scene.removeChild(node));
-  scene.addChild(wrapper);
+   // 1) Obter a cena principal
+   const scene = root.listScenes()[0];
 
-  const out = await io.writeBinary(doc);
-  return out;
+   // 2) Criar nó wrapper e aplicar translação unificada
+   const wrapper = doc.createNode('wrapper')
+       .setTranslation([tx, ty, tz]);
+
+   // 3) Mover os nós de topo para dentro do wrapper
+   scene.listChildren().forEach(node => {     // ← listChildren(), não listNodes() :contentReference[oaicite:0]{index=0}
+       wrapper.addChild(node);
+   });
+
+   // 4) Limpar nós de topo originais da cena
+   scene.listChildren().forEach(node => {
+       scene.removeChild(node);
+   });
+
+   // 5) Adicionar somente o wrapper como raiz
+   scene.addChild(wrapper);
+
+   // 6) Serializar e retornar o buffer resultante
+   const outBuffer = await io.writeBinary(doc);
+   return outBuffer;
 }
