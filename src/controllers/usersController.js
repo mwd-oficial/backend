@@ -476,7 +476,7 @@ export async function cadastrarAr(req, res) {
         );
         const buffer = Buffer.from(resultado.data);
 
-        const arrayBuffer = await translateAndFilter(buffer, req.body.animacao, parseFloat(-17.25), parseFloat(-2), parseFloat(9));
+        const arrayBuffer = await translateAndFilter(buffer, req.body.animacao, parseFloat(17.25), parseFloat(2), parseFloat(-9));
         const novoBuffer = Buffer.from(arrayBuffer);
 
         // 7. Envio do novo GLB ao Drive
