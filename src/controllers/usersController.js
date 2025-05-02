@@ -466,43 +466,57 @@ export async function listarAr(req, res) {
 export async function cadastrarAr(req, res) {
     console.log("ar executado")
     try {
-        const fileId = req.body.driveId;
-        console.log("fileId: " + fileId)
+        const driveId = req.body.driveId;
+        console.log("fileId: " + driveId)
 
-        const resultado = await drive.files.get(
-            { fileId, alt: 'media' },
+         // 2. Download do arquivo GLB
+         const resultado = await drive.files.get(
+            { fileId: driveId, alt: 'media' },
             { responseType: 'arraybuffer' }
         );
-
         const buffer = Buffer.from(resultado.data);
 
+        // 3. Leitura do GLB em memória
         const io = new NodeIO();
-        const doc = await io.readBinary(buffer); // Use readBinary para arquivos .glb
+        const doc = await io.readBinary(buffer);
 
         const root = doc.getRoot();
-        const animations = root.listAnimations();
 
-        animations.forEach(anim => {
+        // 4. Filtrar animações (mantém apenas a especificada)
+        root.listAnimations().forEach(anim => {
             if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
                 anim.dispose();
             }
         });
 
+        // 5. Aplicar a tradução a todos os nós
+        const tx = parseFloat(-17.25) || 0;
+        const ty = parseFloat(-2) || 0;
+        const tz = parseFloat(9) || 0;
+
+        root.listNodes().forEach(node => {
+            // Recupera tradução atual (ou [0,0,0] se não houver)
+            const [cx = 0, cy = 0, cz = 0] = node.getTranslation() || [];
+            node.setTranslation([cx + tx, cy + ty, cz + tz]);
+        });
+
+        // 6. Serializa de volta para ArrayBuffer e Buffer
         const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
 
-        console.log('Arquivo enviado! :D')
-
+        // 7. Envio do novo GLB ao Drive
         const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
+        console.log(`Arquivo GLB com animação '${animacao}' e translação [${tx},${ty},${tz}] enviado ao Drive: ${newDriveId}`);
 
+        // 8. Gravação do registro AR no seu serviço
         await postAr({
             username: req.body.username,
             driveId: newDriveId,
             nome: req.body.nome,
             animacao: req.body.animacao,
             timestamp: req.body.timestamp
-        })
-        
+        });
+
         return res.status(200).json({
             newDriveId: newDriveId,
         });
