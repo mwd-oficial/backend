@@ -476,37 +476,11 @@ export async function cadastrarAr(req, res) {
         );
         const buffer = Buffer.from(resultado.data);
 
-        // 3. Leitura do GLB em memória
-        const io = new NodeIO();
-        const doc = await io.readBinary(buffer);
-
-        const root = doc.getRoot();
-
-        // 4. Filtrar animações (mantém apenas a especificada)
-        root.listAnimations().forEach(anim => {
-            if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
-                anim.dispose();
-            }
-        });
-
-        // 5. Aplicar a tradução a todos os nós
-        const tx = parseFloat(-17.25) || 0;
-        const ty = parseFloat(-2) || 0;
-        const tz = parseFloat(9) || 0;
-
-        root.listNodes().forEach(node => {
-            // Recupera tradução atual (ou [0,0,0] se não houver)
-            const [cx = 0, cy = 0, cz = 0] = node.getTranslation() || [];
-            node.setTranslation([cx + tx, cy + ty, cz + tz]);
-        });
-
-        // 6. Serializa de volta para ArrayBuffer e Buffer
-        const arrayBuffer = await io.writeBinary(doc);
+        const arrayBuffer = await translateAndFilter(buffer, animacao, parseFloat(-17.25), parseFloat(-2), parseFloat(9));
         const novoBuffer = Buffer.from(arrayBuffer);
 
         // 7. Envio do novo GLB ao Drive
         const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
-        console.log(`Arquivo GLB com animação '${req.body.animacao}' e translação [${tx},${ty},${tz}] enviado ao Drive: ${newDriveId}`);
 
         // 8. Gravação do registro AR no seu serviço
         await postAr({
@@ -525,4 +499,26 @@ export async function cadastrarAr(req, res) {
         console.error(erro.message);
         return res.status(500).json({ "Erro": "Falha na requisição" });
     }
+}
+
+async function translateAndFilter(buffer, animacao, tx, ty, tz) {
+  const io = new NodeIO();
+  const doc = await io.readBinary(buffer);
+
+  const root = doc.getRoot();
+  // 1) filtrar animações
+  root.listAnimations().forEach(anim => {
+    if (anim.getName().toLowerCase() !== animacao.toLowerCase()) {
+      anim.dispose();
+    }
+  });
+  // 2) wrapper + tradução
+  const scene   = root.listScenes()[0];
+  const wrapper = doc.createNode('wrapper').setTranslation([tx, ty, tz]);
+  scene.listNodes().forEach(node => wrapper.addChild(node));
+  scene.listNodes().forEach(node => scene.removeChild(node));
+  scene.addChild(wrapper);
+
+  const out = await io.writeBinary(doc);
+  return out;
 }
