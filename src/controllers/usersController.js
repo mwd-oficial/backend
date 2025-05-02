@@ -506,7 +506,7 @@ export async function cadastrarAr(req, res) {
 
         // 7. Envio do novo GLB ao Drive
         const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
-        console.log(`Arquivo GLB com animação '${animacao}' e translação [${tx},${ty},${tz}] enviado ao Drive: ${newDriveId}`);
+        console.log(`Arquivo GLB com animação '${req.body.animacao}' e translação [${tx},${ty},${tz}] enviado ao Drive: ${newDriveId}`);
 
         // 8. Gravação do registro AR no seu serviço
         await postAr({
