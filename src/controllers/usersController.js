@@ -466,31 +466,43 @@ export async function listarAr(req, res) {
 export async function cadastrarAr(req, res) {
     console.log("ar executado")
     try {
-        const driveId = req.body.driveId;
-        console.log("fileId: " + driveId)
+        const fileId = req.body.driveId;
+        console.log("fileId: " + fileId)
 
-         // 2. Download do arquivo GLB
-         const resultado = await drive.files.get(
-            { fileId: driveId, alt: 'media' },
+        const resultado = await drive.files.get(
+            { fileId, alt: 'media' },
             { responseType: 'arraybuffer' }
         );
+
         const buffer = Buffer.from(resultado.data);
 
-        const arrayBuffer = await translateAndFilter(buffer, req.body.animacao, parseFloat(17.25), parseFloat(2), parseFloat(-9));
+        const io = new NodeIO();
+        const doc = await io.readBinary(buffer); // Use readBinary para arquivos .glb
+
+        const root = doc.getRoot();
+        const animations = root.listAnimations();
+
+        animations.forEach(anim => {
+            if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
+                anim.dispose();
+            }
+        });
+
+        const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
 
-        // 7. Envio do novo GLB ao Drive
+        console.log('Arquivo enviado! :D')
+
         const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
 
-        // 8. Gravação do registro AR no seu serviço
         await postAr({
             username: req.body.username,
             driveId: newDriveId,
             nome: req.body.nome,
             animacao: req.body.animacao,
             timestamp: req.body.timestamp
-        });
-
+        })
+        
         return res.status(200).json({
             newDriveId: newDriveId,
         });
@@ -499,40 +511,4 @@ export async function cadastrarAr(req, res) {
         console.error(erro.message);
         return res.status(500).json({ "Erro": "Falha na requisição" });
     }
-}
-
-async function translateAndFilter(buffer, animacao, tx, ty, tz) {
-  const io = new NodeIO();
-  const doc = await io.readBinary(buffer);
-
-  const root = doc.getRoot();
-  // 1) filtrar animações
-  root.listAnimations().forEach(anim => {
-    if (anim.getName().toLowerCase() !== animacao.toLowerCase()) {
-      anim.dispose();
-    }
-  });
-   // 1) Obter a cena principal
-   const scene = root.listScenes()[0];
-
-   // 2) Criar nó wrapper e aplicar translação unificada
-   const wrapper = doc.createNode('wrapper')
-       .setTranslation([tx, ty, tz]);
-
-   // 3) Mover os nós de topo para dentro do wrapper
-   scene.listChildren().forEach(node => {     // ← listChildren(), não listNodes() :contentReference[oaicite:0]{index=0}
-       wrapper.addChild(node);
-   });
-
-   // 4) Limpar nós de topo originais da cena
-   scene.listChildren().forEach(node => {
-       scene.removeChild(node);
-   });
-
-   // 5) Adicionar somente o wrapper como raiz
-   scene.addChild(wrapper);
-
-   // 6) Serializar e retornar o buffer resultante
-   const outBuffer = await io.writeBinary(doc);
-   return outBuffer;
 }
