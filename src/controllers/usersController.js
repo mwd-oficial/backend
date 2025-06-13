@@ -3,10 +3,10 @@ import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
 import sharp from 'sharp';
-import path from "path"
-import fs from "fs"
 import { google } from "googleapis";
-import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel } from "../models/usersModel.js";
+import { NodeIO } from '@gltf-transform/core';
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr } from "../models/usersModel.js";
+import { file } from "googleapis/build/src/apis/file/index.js";
 
 
 const oauth2Client = new google.auth.OAuth2(
@@ -119,15 +119,15 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
 
             const form = new FormData();
             form.append('metadata', JSON.stringify({
-                name: `${dbId}.png`,
-                mimeType: 'image/png',
+                name: `${dbId}.avif`,
+                mimeType: 'image/avif',
                 parents: [folderId]
             }), {
                 contentType: 'application/json'
             });
             form.append('file', otimizado, {
-                filename: `${dbId}.png`,
-                contentType: 'image/png'
+                filename: `${dbId}.avif`,
+                contentType: 'image/avif'
             });
 
             const res = await axios.post('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', form, {
@@ -149,15 +149,18 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
         } else {
             const folderId = "1sQ40PBHoq7PAOYHzbihvA7gew6f3CeBI";
             const form = new FormData();
+            const nomeArquivo = `${bodyData.username}-${bodyData.nome}-${bodyData.timestamp}.glb`;
+
             form.append('metadata', JSON.stringify({
-                name: 'ar.glb',
+                name: nomeArquivo,
                 mimeType: 'model/gltf-binary',
                 parents: [folderId]
             }), {
                 contentType: 'application/json'
             });
-            form.append('file', arquivo.buffer, {
-                filename: 'ar.glb',
+
+            form.append('file', arquivo, {
+                filename: nomeArquivo,
                 contentType: 'model/gltf-binary'
             });
 
@@ -171,6 +174,8 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
             await tornarPublico(res.data.id)
 
             console.log(res.data);
+
+            return res.data.id;
         }
     } catch (erro) {
         console.log("Erro ao fazer upload para o Google Drive: " + erro)
@@ -182,10 +187,7 @@ async function otimizarImg(imageBuffer) {
         const optimizedBuffer = await sharp(imageBuffer)
             .rotate()
             .resize(600, 600, { fit: 'inside' })
-            .toFormat('png', {
-                quality: 80,
-                compressionLevel: 8
-            })
+            .toFormat('avif', { quality: 50 })
             .toBuffer();
         return optimizedBuffer
     } catch (erro) {
@@ -273,10 +275,10 @@ export async function excluirUser(req, res) {
     }
 }
 
-async function deleteFile(imagemId) {
+export async function deleteFile(driveId) {
     try {
         const response = await drive.files.delete({
-            fileId: imagemId,
+            fileId: driveId,
         })
         console.log(response.data, response.status)
     } catch (erro) {
@@ -432,6 +434,74 @@ export async function editarModel(req, res) {
 
         return res.status(200).json({
             msg: "Dados do modelo atualizado com sucesso!"
+        });
+
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// ar
+
+export async function listarAr(req, res) {
+    const models = await getAr();
+    return res.status(200).json(models);
+}
+
+export async function cadastrarAr(req, res) {
+    console.log("ar executado")
+    try {
+        const fileId = req.body.driveId;
+        console.log("fileId: " + fileId)
+
+        const resultado = await drive.files.get(
+            { fileId, alt: 'media' },
+            { responseType: 'arraybuffer' }
+        );
+
+        const buffer = Buffer.from(resultado.data);
+
+        const io = new NodeIO();
+        const doc = await io.readBinary(buffer); // Use readBinary para arquivos .glb
+
+        const root = doc.getRoot();
+        const animations = root.listAnimations();
+
+        animations.forEach(anim => {
+            if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
+                anim.dispose();
+            }
+        });
+
+        const arrayBuffer = await io.writeBinary(doc);
+        const novoBuffer = Buffer.from(arrayBuffer);
+
+        console.log('Arquivo enviado! :D')
+
+        const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
+
+        await postAr({
+            username: req.body.username,
+            driveId: newDriveId,
+            nome: req.body.nome,
+            animacao: req.body.animacao,
+            timestamp: req.body.timestamp
+        })
+        
+        return res.status(200).json({
+            newDriveId: newDriveId,
         });
 
     } catch (erro) {

@@ -57,3 +57,18 @@ export async function putModel(userId, modelData) {
     const objId = new ObjectId(userId);
     return await colecaoModels.updateOne({ _id: objId }, { $set: modelData });
 }
+
+
+
+
+// ar
+
+const colecaoAr = db.collection("ar");
+
+export async function getAr() {
+    return await colecaoAr.find().toArray();
+}
+
+export async function postAr(modelData) {
+    await colecaoAr.insertOne(modelData);
+}

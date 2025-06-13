@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import fetch from "node-fetch"
-import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel } from "../controllers/usersController.js";
+import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr } from "../controllers/usersController.js";
+import excluirAr from "../programado.js"
 
 const corsOptions = {
     origin: ["https://mwd-oficial.github.io", "http://127.0.0.1:5500"],
@@ -39,6 +40,15 @@ export function routes(app) {
     app.post("/models/cadastrar", cadastrarModels)
 
     app.put("/models/editar", editarModel)
+    
+
+
+
+    app.get("/ar", listarAr)
+    
+    app.post("/ar/cadastrar", cadastrarAr)
+
+    app.get("/ar/excluir", excluirAr)
 
 
     app.get('/pegarArquivo/:id', async (req, res) => {
