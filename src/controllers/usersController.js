@@ -5,7 +5,7 @@ import axios from "axios";
 import sharp from 'sharp';
 import { google } from "googleapis";
 import { NodeIO } from '@gltf-transform/core';
-import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr } from "../models/usersModel.js";
+import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr, deleteAr } from "../models/usersModel.js";
 import { file } from "googleapis/build/src/apis/file/index.js";
 
 
@@ -275,6 +275,19 @@ export async function excluirUser(req, res) {
     }
 }
 
+export async function excluirTodosUser(req, res) {
+    try {
+        const users = await getUsers();
+        users.forEach(async (userData) => {
+            await deleteUser({ username: userData.username });
+        })
+        return res.status(200).send("Todos os usuários foram excluídos com sucesso.");
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
 export async function deleteFile(driveId) {
     try {
         const response = await drive.files.delete({
@@ -496,14 +509,41 @@ export async function cadastrarAr(req, res) {
             username: req.body.username,
             driveId: newDriveId,
             nome: req.body.nome,
+            nomeAnimacao: req.body.nomeAnimacao,
             animacao: req.body.animacao,
             timestamp: req.body.timestamp
         })
-        
+
         return res.status(200).json({
             newDriveId: newDriveId,
         });
 
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+export async function postarAr(req, res) {
+    try {
+        await postAr({
+            username: req.body.username,
+            nome: req.body.nome,
+        })
+        return res.status(200).send("Modelo estático cadastrado com sucesso!");
+    } catch (erro) {
+        console.error(erro.message);
+        return res.status(500).json({ "Erro": "Falha na requisição" });
+    }
+}
+
+export async function excluirTodosAr(req, res) {
+    try {
+        const ar = await getAr();
+        ar.forEach(async (modelData) => {
+            await deleteAr({ username: modelData.username });
+        })
+        return res.status(200).send("Todos os AR foram excluídos com sucesso.");
     } catch (erro) {
         console.error(erro.message);
         return res.status(500).json({ "Erro": "Falha na requisição" });

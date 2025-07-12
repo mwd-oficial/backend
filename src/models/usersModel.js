@@ -72,3 +72,7 @@ export async function getAr() {
 export async function postAr(modelData) {
     await colecaoAr.insertOne(modelData);
 }
+
+export async function deleteAr(modelData) {
+    return await colecaoAr.deleteOne(modelData);
+}

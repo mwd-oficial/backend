@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import fetch from "node-fetch"
-import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr } from "../controllers/usersController.js";
+import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr, postarAr, excluirTodosAr } from "../controllers/usersController.js";
 import excluirAr from "../programado.js"
 
 const corsOptions = {
@@ -28,6 +28,7 @@ export function routes(app) {
     app.post("/users/pegarUserInfo", pegarUserInfo)
 
     app.delete("/users/excluir", excluirUser);
+    //app.get("/users/excluirTodos", excluirTodosUser)
 
     app.put("/users/editar/:id", upload.single("imagem"), editarUser);
 
@@ -47,9 +48,10 @@ export function routes(app) {
     app.get("/ar", listarAr)
     
     app.post("/ar/cadastrar", cadastrarAr)
+    app.post("/ar/postar", postarAr)
 
-    app.get("/ar/excluir", excluirAr)
-
+    app.get("/ar/excluir", excluirAr);
+    //app.get("/ar/excluirTodos", excluirTodosAr);
 
     app.get('/pegarArquivo/:id', async (req, res) => {
         const fileId = req.params.id;
