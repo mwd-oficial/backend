@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import fetch from "node-fetch"
-import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr, postarAr, excluirTodosAr } from "../controllers/usersController.js";
+import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr,  excluirTodosAr } from "../controllers/usersController.js";
 import excluirAr from "../programado.js"
 
 const corsOptions = {
@@ -48,7 +48,6 @@ export function routes(app) {
     app.get("/ar", listarAr)
     
     app.post("/ar/cadastrar", cadastrarAr)
-    app.post("/ar/postar", postarAr)
 
     app.get("/ar/excluir", excluirAr);
     //app.get("/ar/excluirTodos", excluirTodosAr);

@@ -3,36 +3,25 @@ import bcrypt from "bcrypt";
 import FormData from "form-data";
 import axios from "axios";
 import sharp from 'sharp';
-import { google } from "googleapis";
+import { put, del } from '@vercel/blob';
+import fs from 'fs/promises'; // Para ler arquivos como buffer
 import { NodeIO } from '@gltf-transform/core';
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr, deleteAr } from "../models/usersModel.js";
-import { file } from "googleapis/build/src/apis/file/index.js";
 
 
-const oauth2Client = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    process.env.REDIRECT_URI
-)
 
-oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN })
-
-const drive = google.drive({
-    version: "v3",
-    auth: oauth2Client
-})
-
-async function getNewAccessToken(refreshToken, clientId, clientSecret) {
-    const response = await axios.post('https://oauth2.googleapis.com/token', null, {
-        params: {
-            client_id: clientId,
-            client_secret: clientSecret,
-            refresh_token: refreshToken,
-            grant_type: 'refresh_token'
-        }
+export async function uploadToVercelBlob(buffer, pathname, contentType) {
+    const blob = await put(pathname, buffer, {
+        access: 'public', // ou 'private', dependendo do seu caso
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        content_type: contentType,
     });
-    return response.data.access_token;
+
+    // blob.url é a URL base e blob.downloadUrl força o download
+    return blob.url;
 }
+
+
 
 
 
@@ -288,14 +277,16 @@ export async function excluirTodosUser(req, res) {
     }
 }
 
-export async function deleteFile(driveId) {
+
+
+export async function deleteFile(blobPath) {
     try {
-        const response = await drive.files.delete({
-            fileId: driveId,
+        await del(blobPath, {
+            token: process.env.BLOB_READ_WRITE_TOKEN,
         })
-        console.log(response.data, response.status)
+        console.log(`Arquivo ${blobPath} deletado com sucesso.`)
     } catch (erro) {
-        console.log(erro.message)
+        console.error(`Erro ao deletar ${blobPath}: ${erro.message}`)
     }
 }
 
@@ -474,63 +465,65 @@ export async function listarAr(req, res) {
 }
 
 export async function cadastrarAr(req, res) {
-    console.log("ar executado")
+    console.log("ar executado");
     try {
-        const fileId = req.body.driveId;
-        console.log("fileId: " + fileId)
+        // 1️⃣ Lê o arquivo local enviado pelo front
+        const filePath = req.body.src; // ex: "assets/models/fnaf1/freddy.glb"
+        if (!filePath) {
+            return res.status(400).json({ "Erro": "Caminho do arquivo não enviado" });
+        }
 
-        const resultado = await drive.files.get(
-            { fileId, alt: 'media' },
-            { responseType: 'arraybuffer' }
-        );
+        let buffer;
+        try {
+            buffer = await fs.readFile(filePath); // Lê o arquivo como Buffer
+        } catch (erro) {
+            return res.status(400).json({ "Erro": "Arquivo não encontrado" });
+        }
 
-        const buffer = Buffer.from(resultado.data);
-
+        // 2️⃣ Lê o buffer usando glTF-transform
         const io = new NodeIO();
-        const doc = await io.readBinary(buffer); // Use readBinary para arquivos .glb
+        const doc = await io.readBinary(buffer); // mantém o fluxo de filtragem de animações
 
-        const root = doc.getRoot();
-        const animations = root.listAnimations();
+        if (req.body.animacao) {
+            // 3️⃣ Filtra animações
+            const root = doc.getRoot();
+            const animations = root.listAnimations();
+            animations.forEach(anim => {
+                if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
+                    anim.dispose();
+                }
+            });
+        }
 
-        animations.forEach(anim => {
-            if (anim.getName().toLowerCase() !== req.body.animacao.toLowerCase()) {
-                anim.dispose();
-            }
-        });
-
+        // 4️⃣ Regrava o modelo filtrado em buffer
         const arrayBuffer = await io.writeBinary(doc);
         const novoBuffer = Buffer.from(arrayBuffer);
 
-        console.log('Arquivo enviado! :D')
+        console.log('Arquivo pronto para upload no Vercel Blob!');
 
-        const newDriveId = await uploadFile(novoBuffer, "glb", req.body, undefined);
+        // 5️⃣ Upload para Vercel Blob
+        const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`; 
+        const contentType = 'model/gltf-binary';
+        const blobUrl = await uploadToVercelBlob(novoBuffer, blobFileName, contentType);
 
+        console.log('Upload finalizado: ', blobUrl);
+
+        // 6️⃣ Salva registro no banco
         await postAr({
             username: req.body.username,
-            driveId: newDriveId,
+            blobUrl: blobUrl, // Agora armazenamos a URL do Blob
+            nomeBlob: blobFileName, // Armazenamos o nome do arquivo no Blob para referência futura
             nome: req.body.nome,
             nomeAnimacao: req.body.nomeAnimacao,
             animacao: req.body.animacao,
             timestamp: req.body.timestamp
-        })
-
-        return res.status(200).json({
-            newDriveId: newDriveId,
         });
 
-    } catch (erro) {
-        console.error(erro.message);
-        return res.status(500).json({ "Erro": "Falha na requisição" });
-    }
-}
+        // 7️⃣ Retorna a URL do arquivo no Blob
+        return res.status(200).json({
+            blobUrl: blobUrl,
+        });
 
-export async function postarAr(req, res) {
-    try {
-        await postAr({
-            username: req.body.username,
-            nome: req.body.nome,
-        })
-        return res.status(200).send("Modelo estático cadastrado com sucesso!");
     } catch (erro) {
         console.error(erro.message);
         return res.status(500).json({ "Erro": "Falha na requisição" });
