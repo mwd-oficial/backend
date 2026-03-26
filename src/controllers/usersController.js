@@ -505,7 +505,6 @@ export async function listarAr(req, res) {
 
 export async function cadastrarAr(req, res) {
     console.log("ar executado");
-    console.log("arquivos na raiz:", fs.readdirSync(process.cwd()));
     try {
         // 1️⃣ Lê o arquivo local enviado pelo front
         const filePath = path.join(process.cwd(), req.body.src); // ex: "assets/models/fnaf1/freddy.glb"
