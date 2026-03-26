@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { put, del } from '@vercel/blob';
 import fs from 'fs/promises'; // Para ler arquivos como buffer
 import { NodeIO } from '@gltf-transform/core';
+import path from "path";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr, deleteAr } from "../models/usersModel.js";
 
 
@@ -504,11 +505,11 @@ export async function listarAr(req, res) {
 
 export async function cadastrarAr(req, res) {
     console.log("ar executado");
-    console.log("body:", req.body);
-    console.log("src:", req.body?.src);
     try {
         // 1️⃣ Lê o arquivo local enviado pelo front
-        const filePath = req.body.src; // ex: "assets/models/fnaf1/freddy.glb"
+        const filePath = path.join(process.cwd(), req.body.src); // ex: "assets/models/fnaf1/freddy.glb"
+        console.log("cwd:", process.cwd());
+        console.log("filePath:", filePath);
         if (!filePath) {
             return res.status(400).json({ "Erro": "Caminho do arquivo não enviado" });
         }
@@ -516,7 +517,6 @@ export async function cadastrarAr(req, res) {
         let buffer;
         try {
             buffer = await fs.readFile(filePath); // Lê o arquivo como Buffer
-            console.log("buffer: " + buffer)
         } catch (erro) {
             return res.status(400).json({ "Erro": "Arquivo não encontrado" });
         }
