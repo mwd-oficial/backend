@@ -502,28 +502,46 @@ export async function listarAr(req, res) {
     const models = await getAr();
     return res.status(200).json(models);
 }
-
 export async function cadastrarAr(req, res) {
     console.log("ar executado");
+
     try {
-        // 1️⃣ Lê o arquivo local enviado pelo front
-        const filePath = path.join(process.cwd(), req.body.src); // ex: "assets/models/fnaf1/freddy.glb"
-        console.log("cwd:", process.cwd());
-        console.log("filePath:", filePath);
+        const filePath = req.body.src;
+
         if (!filePath) {
             return res.status(400).json({ "Erro": "Caminho do arquivo não enviado" });
         }
 
+        // 🔥 Monta URL pública do arquivo
+        const baseUrl = process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : "http://localhost:3000";
+
+        const fileUrl = `${baseUrl}/${filePath}`;
+
+        console.log("fileUrl:", fileUrl);
+
         let buffer;
+
         try {
-            buffer = await fs.readFile(filePath); // Lê o arquivo como Buffer
+            // 🔥 Busca o arquivo via HTTP (em vez de fs)
+            const response = await fetch(fileUrl);
+
+            if (!response.ok) {
+                throw new Error("Erro ao buscar arquivo");
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+
         } catch (erro) {
+            console.error("Erro ao buscar arquivo:", erro);
             return res.status(400).json({ "Erro": "Arquivo não encontrado" });
         }
 
         // 2️⃣ Lê o buffer usando glTF-transform
         const io = new NodeIO();
-        const doc = await io.readBinary(buffer); // mantém o fluxo de filtragem de animações
+        const doc = await io.readBinary(buffer);
 
         if (req.body.animacao) {
             // 3️⃣ Filtra animações
