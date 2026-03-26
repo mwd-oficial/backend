@@ -10,6 +10,10 @@ import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getMode
 
 
 
+
+
+
+
 export async function uploadToVercelBlob(buffer, pathname, contentType) {
     const blob = await put(pathname, buffer, {
         access: 'public', // ou 'private', dependendo do seu caso
@@ -21,11 +25,34 @@ export async function uploadToVercelBlob(buffer, pathname, contentType) {
     return blob.url;
 }
 
+export async function deleteFile(blobPath) {
+    try {
+        await del(blobPath, {
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+        })
+        console.log(`Arquivo ${blobPath} deletado com sucesso.`)
+    } catch (erro) {
+        console.error(`Erro ao deletar ${blobPath}: ${erro.message}`)
+    }
+}
 
 
 
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+// Users
 
 
 export async function listarUsers(req, res) {
@@ -78,7 +105,18 @@ export async function cadastrarUser(req, res) {
         });
 
         if (req.file) {
-            await uploadFile(req.file, "img", userData, newUser.insertedId)
+            //await uploadFile(req.file, "img", userData, newUser.insertedId)
+            const novoBuffer = req.file
+            const otimizado = await otimizarImg(novoBuffer)
+            const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`;
+            const contentType = 'image/avif';
+            const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
+
+            userData.imagemId = blobUrl;
+            await putUser(newUser.insertedId, {
+                imagemId: userData.imagemId,
+                preencher: userData.preencher
+            });
         } else if (JSON.parse(userData.semFoto)) {
             await putUser(newUser.insertedId, {
                 imagemId: "",
@@ -97,7 +135,7 @@ export async function cadastrarUser(req, res) {
         return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
-
+/*
 async function uploadFile(arquivo, tipo, bodyData, dbId) {
     try {
         const newAccessToken = await getNewAccessToken(process.env.REFRESH_TOKEN, process.env.CLIENT_ID, process.env.CLIENT_SECRET);
@@ -170,7 +208,7 @@ async function uploadFile(arquivo, tipo, bodyData, dbId) {
         console.log("Erro ao fazer upload para o Google Drive: " + erro)
     }
 }
-
+*/
 async function otimizarImg(imageBuffer) {
     try {
         const optimizedBuffer = await sharp(imageBuffer)
@@ -181,21 +219,6 @@ async function otimizarImg(imageBuffer) {
         return optimizedBuffer
     } catch (erro) {
         console.log("Erro ao otimizar a imagem com sharp: " + erro)
-    }
-}
-
-async function tornarPublico(id) {
-    try {
-        await drive.permissions.create({
-            fileId: id,
-            requestBody: {
-                role: "reader",
-                type: "anyone"
-            }
-        })
-        console.log(`Arquivo com ID ${id} agora está público.`);
-    } catch (erro) {
-        console.log(erro.message)
     }
 }
 
@@ -279,16 +302,7 @@ export async function excluirTodosUser(req, res) {
 
 
 
-export async function deleteFile(blobPath) {
-    try {
-        await del(blobPath, {
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-        })
-        console.log(`Arquivo ${blobPath} deletado com sucesso.`)
-    } catch (erro) {
-        console.error(`Erro ao deletar ${blobPath}: ${erro.message}`)
-    }
-}
+
 
 
 
@@ -334,7 +348,18 @@ export async function editarUser(req, res) {
         console.log(userData.semFoto)
         if (req.file) {
             await deleteFile(userData.oldImagemId)
-            await uploadFile(req.file, "img", userData, userId)
+            //await uploadFile(req.file, "img", userData, userId)
+            const novoBuffer = req.file
+            const otimizado = await otimizarImg(novoBuffer)
+            const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`;
+            const contentType = 'image/avif';
+            const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
+
+            userData.imagemId = blobUrl;
+            await putUser(newUser.insertedId, {
+                imagemId: userData.imagemId,
+                preencher: userData.preencher
+            });
         } else if (JSON.parse(userData.semFoto)) {
             await deleteFile(userData.oldImagemId)
             await putUser(userId, {
@@ -457,6 +482,19 @@ export async function editarModel(req, res) {
 
 
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
 // ar
 
 export async function listarAr(req, res) {
@@ -476,6 +514,7 @@ export async function cadastrarAr(req, res) {
         let buffer;
         try {
             buffer = await fs.readFile(filePath); // Lê o arquivo como Buffer
+            console.log("buffer: " + buffer)
         } catch (erro) {
             return res.status(400).json({ "Erro": "Arquivo não encontrado" });
         }
@@ -502,7 +541,7 @@ export async function cadastrarAr(req, res) {
         console.log('Arquivo pronto para upload no Vercel Blob!');
 
         // 5️⃣ Upload para Vercel Blob
-        const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`; 
+        const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`;
         const contentType = 'model/gltf-binary';
         const blobUrl = await uploadToVercelBlob(novoBuffer, blobFileName, contentType);
 
