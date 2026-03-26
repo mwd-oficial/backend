@@ -504,6 +504,8 @@ export async function listarAr(req, res) {
 
 export async function cadastrarAr(req, res) {
     console.log("ar executado");
+    console.log("body:", req.body);
+    console.log("src:", req.body?.src);
     try {
         // 1️⃣ Lê o arquivo local enviado pelo front
         const filePath = req.body.src; // ex: "assets/models/fnaf1/freddy.glb"
