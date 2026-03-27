@@ -109,7 +109,7 @@ export async function cadastrarUser(req, res) {
             //await uploadFile(req.file, "img", userData, newUser.insertedId)
             const novoBuffer = req.file
             const otimizado = await otimizarImg(novoBuffer)
-            const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`;
+            const blobFileName = `${req.body.username}.avif`;
             const contentType = 'image/avif';
             const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
 
