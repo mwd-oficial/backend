@@ -106,7 +106,6 @@ export async function cadastrarUser(req, res) {
         });
 
         if (req.file) {
-            //await uploadFile(req.file, "img", userData, newUser.insertedId)
             const novoBuffer = req.file
             const otimizado = await otimizarImg(novoBuffer)
             const blobFileName = `${req.body.username}.avif`;
@@ -276,10 +275,9 @@ export async function editarUser(req, res) {
         console.log(userData.semFoto)
         if (req.file) {
             await deleteFile(userData.oldimagemUrl)
-            //await uploadFile(req.file, "img", userData, userId)
             const novoBuffer = req.file
             const otimizado = await otimizarImg(novoBuffer)
-            const blobFileName = `${req.body.nome || 'modelo'}-${req.body.timestamp}.glb`;
+            const blobFileName = `${req.body.username}.avif`;
             const contentType = 'image/avif';
             const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
 
