@@ -51,22 +51,4 @@ export function routes(app) {
 
     app.get("/ar/excluir", excluirAr);
     //app.get("/ar/excluirTodos", excluirTodosAr);
-
-    app.get('/pegarArquivo/:id', async (req, res) => {
-        const fileId = req.params.id;
-        const url = `https://drive.google.com/uc?id=${fileId}`;
-
-        try {
-            const response = await fetch(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0' }
-            });
-
-            if (!response.ok) throw new Error('Erro ao acessar o arquivo');
-
-            res.header('Access-Control-Allow-Origin', '*'); // Adiciona o cabeçalho CORS na resposta
-            response.body.pipe(res);
-        } catch (error) {
-            res.status(500).json({ error: 'Erro ao acessar o arquivo' });
-        }
-    });
 }
