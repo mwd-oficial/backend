@@ -513,7 +513,7 @@ export async function cadastrarAr(req, res) {
         }
 
         // 🔥 Monta URL pública do arquivo
-        const fileUrl = `https://fnaf3d.vercel.app/${filePath}`
+        const fileUrl = `https://raw.githubusercontent.com/mwd-oficial/fnaf3d/main/${filePath}`
 
         console.log("fileUrl:", fileUrl);
 
