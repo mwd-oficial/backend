@@ -14,6 +14,7 @@ const upload = multer()
 
 export function routes(app) {
     app.use(express.json())
+    app.use(express.static('public'));
     app.use(cors(corsOptions));
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
