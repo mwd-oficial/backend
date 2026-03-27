@@ -513,8 +513,8 @@ export async function cadastrarAr(req, res) {
         }
 
         // 🔥 Monta URL pública do arquivo
-        const baseUrl = process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
+        const baseUrl = process.env.FNAF3D_VERCEL_URL
+            ? `https://${process.env.FNAF3D_VERCEL_URL}`
             : "http://localhost:3000";
 
         const fileUrl = `${baseUrl}/${filePath}`;
