@@ -113,14 +113,14 @@ export async function cadastrarUser(req, res) {
             const contentType = 'image/avif';
             const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
 
-            userData.imagemId = blobUrl;
+            userData.imagemUrl = blobUrl;
             await putUser(newUser.insertedId, {
-                imagemId: userData.imagemId,
+                imagemUrl: userData.imagemUrl,
                 preencher: userData.preencher
             });
         } else if (JSON.parse(userData.semFoto)) {
             await putUser(newUser.insertedId, {
-                imagemId: "",
+                imagemUrl: "",
                 preencher: false
             });
         }
@@ -136,80 +136,7 @@ export async function cadastrarUser(req, res) {
         return res.status(500).json({ "Erro": "Falha na requisição" });
     }
 }
-/*
-async function uploadFile(arquivo, tipo, bodyData, dbId) {
-    try {
-        const newAccessToken = await getNewAccessToken(process.env.REFRESH_TOKEN, process.env.CLIENT_ID, process.env.CLIENT_SECRET);
-        if (tipo == "img") {
-            const imageBuffer = arquivo.buffer
-            const otimizado = await otimizarImg(imageBuffer)
-            const folderId = "1WjnpiDtAcyIK8k8xE-weR2kTOu9Dsa9P";
 
-            const form = new FormData();
-            form.append('metadata', JSON.stringify({
-                name: `${dbId}.avif`,
-                mimeType: 'image/avif',
-                parents: [folderId]
-            }), {
-                contentType: 'application/json'
-            });
-            form.append('file', otimizado, {
-                filename: `${dbId}.avif`,
-                contentType: 'image/avif'
-            });
-
-            const res = await axios.post('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', form, {
-                headers: {
-                    'Authorization': `Bearer ${newAccessToken}`,
-                    ...form.getHeaders()
-                }
-            });
-
-            bodyData.imagemId = res.data.id;
-            await putUser(dbId, {
-                imagemId: bodyData.imagemId,
-                preencher: bodyData.preencher
-            });
-
-            await tornarPublico(res.data.id)
-
-            console.log(res.data);
-        } else {
-            const folderId = "1sQ40PBHoq7PAOYHzbihvA7gew6f3CeBI";
-            const form = new FormData();
-            const nomeArquivo = `${bodyData.username}-${bodyData.nome}-${bodyData.timestamp}.glb`;
-
-            form.append('metadata', JSON.stringify({
-                name: nomeArquivo,
-                mimeType: 'model/gltf-binary',
-                parents: [folderId]
-            }), {
-                contentType: 'application/json'
-            });
-
-            form.append('file', arquivo, {
-                filename: nomeArquivo,
-                contentType: 'model/gltf-binary'
-            });
-
-            const res = await axios.post('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', form, {
-                headers: {
-                    'Authorization': `Bearer ${newAccessToken}`,
-                    ...form.getHeaders()
-                }
-            });
-
-            await tornarPublico(res.data.id)
-
-            console.log(res.data);
-
-            return res.data.id;
-        }
-    } catch (erro) {
-        console.log("Erro ao fazer upload para o Google Drive: " + erro)
-    }
-}
-*/
 async function otimizarImg(imageBuffer) {
     try {
         const optimizedBuffer = await sharp(imageBuffer)
@@ -279,7 +206,7 @@ export async function pegarUserInfo(req, res) {
 export async function excluirUser(req, res) {
     const userData = req.body;
     try {
-        await deleteFile(userData.imagemId)
+        await deleteFile(userData.imagemUrl)
         const excludedUser = await deleteUser({ username: userData.username });
         return res.status(200).json(excludedUser);
     } catch (erro) {
@@ -348,7 +275,7 @@ export async function editarUser(req, res) {
 
         console.log(userData.semFoto)
         if (req.file) {
-            await deleteFile(userData.oldImagemId)
+            await deleteFile(userData.oldimagemUrl)
             //await uploadFile(req.file, "img", userData, userId)
             const novoBuffer = req.file
             const otimizado = await otimizarImg(novoBuffer)
@@ -356,15 +283,15 @@ export async function editarUser(req, res) {
             const contentType = 'image/avif';
             const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
 
-            userData.imagemId = blobUrl;
+            userData.imagemUrl = blobUrl;
             await putUser(newUser.insertedId, {
-                imagemId: userData.imagemId,
+                imagemUrl: userData.imagemUrl,
                 preencher: userData.preencher
             });
         } else if (JSON.parse(userData.semFoto)) {
-            await deleteFile(userData.oldImagemId)
+            await deleteFile(userData.oldimagemUrl)
             await putUser(userId, {
-                imagemId: "",
+                imagemUrl: "",
                 preencher: false
             });
         }
