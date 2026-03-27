@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import fetch from "node-fetch"
-import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr,  excluirTodosAr } from "../controllers/usersController.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr, excluirTodosAr } from "../controllers/usersController.js";
 import excluirAr from "../programado.js"
 
 const corsOptions = {
@@ -12,6 +14,11 @@ const corsOptions = {
 
 const upload = multer()
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 export function routes(app) {
     app.use(express.json())
     app.use(cors(corsOptions));
@@ -19,6 +26,16 @@ export function routes(app) {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
         next();
+    });
+
+    app.get('/assets/models/fnaf1/:folder/:file', (req, res) => {
+        const { folder, file } = req.params;
+        const filePath = path.join(__dirname, '../../public/assets/models', folder, file);
+        res.sendFile(filePath, err => {
+            if (err) {
+                res.status(404).send('Arquivo não encontrado');
+            }
+        });
     });
 
     app.get("/users", listarUsers);
@@ -41,12 +58,12 @@ export function routes(app) {
     app.post("/models/cadastrar", cadastrarModels)
 
     app.put("/models/editar", editarModel)
-    
+
 
 
 
     app.get("/ar", listarAr)
-    
+
     app.post("/ar/cadastrar", cadastrarAr)
 
     app.get("/ar/excluir", excluirAr);
