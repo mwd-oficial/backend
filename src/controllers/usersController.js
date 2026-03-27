@@ -106,7 +106,7 @@ export async function cadastrarUser(req, res) {
         });
 
         if (req.file) {
-            const novoBuffer = req.file
+            const novoBuffer = req.file.buffer;
             const otimizado = await otimizarImg(novoBuffer)
             const blobFileName = `${req.body.username}.avif`;
             const contentType = 'image/avif';
@@ -275,7 +275,7 @@ export async function editarUser(req, res) {
         console.log(userData.semFoto)
         if (req.file) {
             await deleteFile(userData.oldimagemUrl)
-            const novoBuffer = req.file
+            const novoBuffer = req.file.buffer;
             const otimizado = await otimizarImg(novoBuffer)
             const blobFileName = `${req.body.username}.avif`;
             const contentType = 'image/avif';
@@ -427,6 +427,7 @@ export async function listarAr(req, res) {
     const models = await getAr();
     return res.status(200).json(models);
 }
+
 export async function cadastrarAr(req, res) {
     console.log("ar executado");
 
