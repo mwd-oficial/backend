@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { put, del } from '@vercel/blob';
 import fs from 'fs/promises'; // Para ler arquivos como buffer
 import { NodeIO } from '@gltf-transform/core';
+import { EXTTextureWebP } from '@gltf-transform/extensions';
 import path from "path";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr, deleteAr } from "../models/usersModel.js";
 
@@ -536,7 +537,7 @@ export async function cadastrarAr(req, res) {
         }
 
         // 2️⃣ Lê o buffer usando glTF-transform
-        const io = new NodeIO();
+        const io = new NodeIO().registerExtensions([EXTTextureWebP]);
         const doc = await io.readBinary(buffer);
 
         if (req.body.animacao) {
