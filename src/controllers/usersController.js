@@ -282,7 +282,7 @@ export async function editarUser(req, res) {
             const blobUrl = await uploadToVercelBlob(otimizado, blobFileName, contentType);
 
             userData.imagemUrl = blobUrl;
-            await putUser(newUser.insertedId, {
+            await putUser(userId, {
                 imagemUrl: userData.imagemUrl,
                 preencher: userData.preencher
             });
