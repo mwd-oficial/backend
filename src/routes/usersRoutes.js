@@ -10,9 +10,7 @@ const corsOptions = {
     optionsSuccessStatus: 200
 }
 
-const upload = multer({
-  limits: { fileSize: 25 * 1024 * 1024 } // 25 MB
-});
+const upload = multer()
 
 export function routes(app) {
     app.use(express.json())
