@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import fetch from "node-fetch"
 import { listarUsers, cadastrarUser, validarSenha, pegarUserInfo, excluirUser, excluirTodosUser, editarUser, atualizarDado, listarModels, cadastrarModels, editarModel, listarAr, cadastrarAr,  excluirTodosAr } from "../controllers/usersController.js";
 import excluirAr from "../programado.js"
 

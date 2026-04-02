@@ -1,12 +1,8 @@
 import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
-import FormData from "form-data";
-import axios from "axios";
 import sharp from 'sharp';
 import { put, del } from '@vercel/blob';
-import fs from 'fs/promises'; // Para ler arquivos como buffer
 import { NodeIO } from '@gltf-transform/core';
-import path from "path";
 import { getUsers, postUser, getUsername, getEmail, deleteUser, putUser, getModels, postModels, getModelId, putModel, getAr, postAr, deleteAr } from "../models/usersModel.js";
 
 
